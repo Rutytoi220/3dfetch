@@ -60,4 +60,4 @@ modules:
     sources:
       - type: archive
         url: https://github.com/Rutytoi220/3dfetch/archive/refs/tags/v0.3.0.tar.gz
-        sha256: 75bcde680297afccfa564955f3d0329e5ef2c795e86275a2990928165f7da9d1
+        sha256: c3d6fc6b88f5eceb2df14a5fc7ab21e45e4d2f873abdf1feb7eaa5a7e8479e11
