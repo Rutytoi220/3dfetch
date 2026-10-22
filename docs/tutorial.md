@@ -81,6 +81,38 @@ Once it lands on Flathub, this gets a lot shorter:
 flatpak install flathub io.github.rutytoi220._3dfetch
 ```
 
+#### The `3dfetch` command after a Flatpak install
+
+This is the bit that trips people up. Flatpak exports the app's binary
+under the app's ID rather than under the name you installed it with, so
+afterwards you'll find:
+
+```
+~/.local/share/flatpak/exports/bin/io.github.rutytoi220._3dfetch
+```
+
+and `3dfetch` on its own will say *command not found*. Point a name at it
+once and you're done:
+
+```bash
+mkdir -p ~/.local/bin
+ln -sf ~/.local/share/flatpak/exports/bin/io.github.rutytoi220._3dfetch ~/.local/bin/3dfetch
+```
+
+If you installed it system-wide (the software centre usually does), the
+export lives in `/var/lib/flatpak/exports/bin` instead:
+
+```bash
+sudo ln -sf /var/lib/flatpak/exports/bin/io.github.rutytoi220._3dfetch /usr/local/bin/3dfetch
+```
+
+The wrapper passes every argument through, so `3dfetch --logo ubuntu` and
+friends work exactly like you'd expect.
+
+Honestly though, if all you want is the command, the plain binary is the
+easier way to run a terminal program. The Flatpak is there for people who
+would rather not install anything on the host.
+
 ### Homebrew
 
 ```bash
@@ -190,6 +222,18 @@ which drops everything to the nearest of the 16 basic colors.
 ```
 
 ## When something looks off
+
+**`3dfetch: command not found` after a Flatpak install.** Flatpak exports
+the binary under the app's ID, not the name you installed it with. See
+[the note above](#the-3dfetch-command-after-a-flatpak-install) — it's a
+one-line symlink.
+
+**`flatpak run` says the app isn't installed.** You probably installed it
+for your user only and left off `--user`:
+
+```bash
+flatpak run --user io.github.rutytoi220._3dfetch
+```
 
 **No logo, or the wrong one.** The logos come from fastfetch. If it isn't
 installed, you get the built-in Gentoo logo instead:

@@ -75,6 +75,13 @@ Then run it:
 flatpak run io.github.rutytoi220._3dfetch
 ```
 
+Flatpak exports the binary under the app's ID rather than the name you
+installed it with, so if you want to type `3dfetch` you'll need a symlink:
+
+```
+ln -sf ~/.local/share/flatpak/exports/bin/io.github.rutytoi220._3dfetch ~/.local/bin/3dfetch
+```
+
 Once it lands on Flathub this gets shorter:
 
 ```
