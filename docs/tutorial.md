@@ -217,7 +217,7 @@ which drops everything to the nearest of the 16 basic colors.
 3dfetch --speed 0.5        half speed
 3dfetch --speed 10         ten times as fast
 3dfetch --speed -3         spin it backwards
-3dfetch --nggyu            never gonna give you up
+3dfetch --nggyu            a surprise
 3dfetch --no-info          just the logo
 3dfetch --box              draw a frame around the info
 3dfetch --size 2           twice as big
@@ -230,17 +230,19 @@ is ten times as fast, and a negative number spins it backwards. The frame
 rate goes up along with it, so a fast spin still looks smooth instead of
 jumping about.
 
-## Never gonna give you up
+## A surprise
 
-`--nggyu` throws the logo out and puts Rick in his place. He dances, the
-notes drift about, and the lyrics change every so often:
+There's a flag in `--help` that reads like a dare. Take it:
 
 ```bash
 3dfetch --nggyu
 ```
 
-The system info stays put on the right, so you can still see what your
-machine is up to while Rick does his thing.
+We won't say what it does. The system info stays put on the right, so you
+can still watch your machine while whatever it is does its thing.
+
+(The artwork is an ASCII portrait from
+[johnsoupir/ASCII_Rickroll](https://github.com/johnsoupir/ASCII_Rickroll).)
 
 ## When something looks off
 

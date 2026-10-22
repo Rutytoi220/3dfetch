@@ -12,7 +12,7 @@ ifeq ($(UNAME_S),Darwin)
   LDLIBS += -framework IOKit -framework CoreFoundation
 endif
 
-fetch: fetch.c
+fetch: fetch.c rickroll.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -DFETCH_VERSION='"$(VERSION)"' -DFETCH_CODENAME='"$(CODENAME)"' -DFETCH_ARCH='"$(UNAME_M)"' -DFETCH_OS='"$(UNAME_S)"' -o $@ $< $(LDLIBS)
 
 install: fetch
@@ -26,7 +26,7 @@ uninstall:
 clean:
 	rm -f fetch tests/shared
 
-tests/shared: tests/shared.c fetch.c
+tests/shared: tests/shared.c fetch.c rickroll.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 test: fetch tests/shared
