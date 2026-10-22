@@ -57,15 +57,7 @@ modules:
         /app/share/metainfo/io.github.rutytoi220._3dfetch.metainfo.xml
       - install -Dm644 flatpak/io.github.rutytoi220._3dfetch.svg
         /app/share/icons/hicolor/scalable/apps/io.github.rutytoi220._3dfetch.svg
-      # The screenshots are shipped with the app and picked up by the
-      # appstream catalog from there.
-      - install -Dm644 flatpak/screenshots/arch.png
-        /app/share/metainfo/screenshots/arch.png
-      - install -Dm644 flatpak/screenshots/ubuntu.png
-        /app/share/metainfo/screenshots/ubuntu.png
-      - install -Dm644 flatpak/screenshots/linuxmint.png
-        /app/share/metainfo/screenshots/linuxmint.png
     sources:
       - type: archive
         url: https://github.com/Rutytoi220/3dfetch/archive/refs/tags/v0.2.0.tar.gz
-        sha256: 2d558cf684df285702bb9eed992df92d06f2140d80f5ebe9144bb7670a4977fb
+        sha256: b1b96a08598a3c01cdc56f6c046f9c0c84527d84b2cbe22124277074a68112ef

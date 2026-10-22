@@ -8,3 +8,4 @@ debian/*.substvars
 debian/*.debhelper.log
 flatpak/build
 flatpak/.flatpak-builder
+.flatpak-builder
