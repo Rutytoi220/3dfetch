@@ -42,13 +42,14 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
-    <release version="0.2.0" date="2026-10-22">
+    <release version="0.3.0" date="2026-10-22">
       <description>
         <p>First release.</p>
         <ul>
           <li>Installed as both 3dfetch and fetch</li>
           <li>The info labels take the color of the logo</li>
           <li>Flatpak packaging</li>
+          <li>--speed has no limit, and the frame rate follows it</li>
         </ul>
       </description>
     </release>

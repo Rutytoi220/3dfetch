@@ -29,13 +29,21 @@ class FetchTests(unittest.TestCase):
             ["--frames", "1.5"], ["--height", "0"], ["--height", "201"],
             ["--size", "nan"], ["--size", "0.4"], ["--size", "5.1"],
             ["--depth", "inf"], ["--depth", "0"], ["--depth", "10.1"],
-            ["--speed", "1junk"], ["--speed", "1e9999"], ["--speed", "1001"],
+            ["--speed", "1junk"], ["--speed", "1e9999"], ["--speed", "nan"],
             ["--logo"], ["--unknown"],
         ]:
             with self.subTest(args=args):
                 result = self.run_fetch(args)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(result.stderr)
+
+    def test_speed_has_no_limit(self):
+        # Any finite speed is allowed, however large.
+        for speed in ["0", "0.001", "-1", "2.5", "1000", "100000", "1e30"]:
+            with self.subTest(speed=speed):
+                result = self.run_fetch(["--frames", "2", "--no-info", "--speed", speed])
+                self.assertEqual(result.returncode, 0)
+                self.assertTrue(result.stdout)
 
     def test_shading_and_cli_precedence(self):
         with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:

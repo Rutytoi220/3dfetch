@@ -104,6 +104,7 @@ static int stacked_info_rows = 0;   // info lines shown in stacked layout
 static int term_cols = 0;
 static int term_rows = 0;
 #define PI 3.14159265f
+#define TAU (2.0f * PI)
 #ifndef FETCH_VERSION
 #define FETCH_VERSION "dev"
 #endif
@@ -117,6 +118,20 @@ static int parse_number(const char *option, const char *text, float min,
       value < min || value > max) {
     fprintf(stderr, "%s: %s requires a finite number from %g to %g (got '%s')\n",
             prog_name, option, min, max, text);
+    return 0;
+  }
+  *out = value;
+  return 1;
+}
+
+// Same as parse_number(), but with no range: any finite number is fine.
+static int parse_number_any(const char *option, const char *text, float *out) {
+  char *end;
+  errno = 0;
+  float value = strtof(text, &end);
+  if (end == text || *end || errno == ERANGE || !isfinite(value)) {
+    fprintf(stderr, "%s: %s requires a finite number (got '%s')\n", prog_name,
+            option, text);
     return 0;
   }
   *out = value;
@@ -1123,7 +1138,7 @@ static void load_config(void) {
     if (strncmp(line, "speed=", 6) == 0) {
       char *val = line + 6;
       strip_inline_hint(val);
-      if (parse_number("speed", val, -1000.0f, 1000.0f, &config_speed))
+      if (parse_number_any("speed", val, &config_speed))
         config_speed_set = 1;
       continue;
     }
@@ -4377,6 +4392,8 @@ int main(int argc, char **argv) {
           "  --rotate-x                Lock rotation to X axis only\n"
           "  --rotate-y                Lock rotation to Y axis only\n"
           "  -s, --speed <float>       Speed multiplier (default 1.0)\n"
+          "                            No limit: 0.5 is half speed, 10 is ten\n"
+          "                            times as fast, negative spins backwards\n"
           "  --size <float>            Scale the logo (e.g. 2.0 for double "
           "size)\n"
           "  --depth <float>           Scale the 3D depth (default 1.0)\n"
@@ -4458,7 +4475,7 @@ int main(int argc, char **argv) {
         return 1;
       }
       const char *option = argv[i];
-      if (!parse_number(option, argv[++i], -1000.0f, 1000.0f, &speed))
+      if (!parse_number_any(option, argv[++i], &speed))
         return 1;
       speed_set = 1;
     } else if (strcmp(argv[i], "--no-info") == 0) {
@@ -4725,8 +4742,29 @@ int main(int argc, char **argv) {
   int mouse_dragging = 0;
   int mouse_last_x = 0, mouse_last_y = 0;
   float drag_vx = 0.0f, drag_vy = 0.0f;
+  struct timespec last_refresh = {0, 0};
 
   for (int frame = 0; max_frames == 0 || frame < max_frames; frame++) {
+    // A faster spin gets more frames a second so it stays smooth instead of
+    // jumping, up to a point. Past that the frames are as fast as they can
+    // go and the turn per frame grows with the speed instead.
+    int frame_us = 50000;
+    if (speed > 1.0f) {
+      int want = (int)(50000.0f / speed);
+      if (want < 4000)
+        want = 4000; // at most 250 frames a second
+      frame_us = want;
+    }
+    // The turn per frame, scaled so the spin runs at the speed asked for:
+    // 0.04 radians every 20 frames a second is the normal speed.
+    float step = 0.04f * speed * ((float)frame_us / 50000.0f);
+    // Refresh the live fields about once a second, however fast we go.
+    int refresh_every = 1000000 / frame_us;
+    if (refresh_every < 1)
+      refresh_every = 1;
+    struct timespec frame_start;
+    clock_gettime(CLOCK_MONOTONIC, &frame_start);
+
     // Read input: mouse events control rotation, any other key exits.
     // Peek one byte first — only consume input if it's an escape (mouse).
     // Non-escape bytes stay in the buffer so the shell gets the keypress.
@@ -4836,11 +4874,11 @@ int main(int argc, char **argv) {
         fflush(stdout);
       }
     }
-    // Refresh fast dynamic fields every ~1 second (20 frames).
+    // Refresh fast dynamic fields every ~1 second.
     // Only uptime/memory/swap — they're pure /proc reads, no popen,
     // so they don't hitch the animation. Battery/disk/ip use popen and
     // stay static (user can restart to refresh those).
-    if (show_info && frame > 0 && frame % 20 == 0) {
+    if (show_info && frame > 0 && frame % refresh_every == 0) {
       is_refresh_pass = 1;
       if (field_line[F_UPTIME] >= 0) {
         current_field = F_UPTIME;
@@ -4864,10 +4902,14 @@ int main(int argc, char **argv) {
         A += drag_vx;
         B += drag_vy;
       } else {
-        A += rotate_x ? 0.04f * speed : 0.0f;
-        B += rotate_y ? 0.06f * speed : 0.0f;
+        A += rotate_x ? step : 0.0f;
+        B += rotate_y ? step * 1.5f : 0.0f;
       }
     }
+    // Keep the angles in a small range, so a wild speed doesn't slowly
+    // grind the precision out of them.
+    A = fmodf(A, TAU);
+    B = fmodf(B, TAU);
     float cA = cosf(A), sA = sinf(A);
     float cB = cosf(B), sB = sinf(B);
 
@@ -5049,7 +5091,15 @@ int main(int argc, char **argv) {
     }
     if (write(STDOUT_FILENO, out_buf, p - out_buf) < 0)
       break;
-    usleep(50000);
+    // Sleep whatever is left of the frame's time, so the frame rate stays
+    // steady and the spin keeps to the speed asked for.
+    struct timespec frame_end;
+    clock_gettime(CLOCK_MONOTONIC, &frame_end);
+    long spent_us = (frame_end.tv_sec - frame_start.tv_sec) * 1000000 +
+                    (frame_end.tv_nsec - frame_start.tv_nsec) / 1000;
+    long rest_us = frame_us - spent_us;
+    if (rest_us > 0)
+      usleep(rest_us);
   }
 
   printf("\033[?25h");

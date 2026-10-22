@@ -214,12 +214,20 @@ which drops everything to the nearest of the 16 basic colors.
 ```
 3dfetch --logo ubuntu      any logo fastfetch knows
 3dfetch --frames 1         draw one frame and quit (good for screenshots)
+3dfetch --speed 0.5        half speed
+3dfetch --speed 10         ten times as fast
+3dfetch --speed -3         spin it backwards
 3dfetch --no-info          just the logo
 3dfetch --box              draw a frame around the info
 3dfetch --size 2           twice as big
-3dfetch --speed 0.5        half speed
+3dfetch --height 20        shorter
 3dfetch --help             everything else
 ```
+
+There's no limit on `--speed`. `0` freezes it, `0.5` is half speed, `10`
+is ten times as fast, and a negative number spins it backwards. The frame
+rate goes up along with it, so a fast spin still looks smooth instead of
+jumping about.
 
 ## When something looks off
 

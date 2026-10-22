@@ -129,7 +129,10 @@ Which axes to rotate around. `x`, `y`, or `xy` (default).
 speed=1.0
 ```
 
-Rotation speed multiplier. Higher = faster.
+Rotation speed multiplier. Higher = faster. There's no limit: `0.5` is
+half speed, `10` is ten times as fast, and a negative number spins it
+backwards. The frame rate goes up with the speed too, so a fast spin
+stays smooth instead of jumping.
 
 ```
 size=1.0
