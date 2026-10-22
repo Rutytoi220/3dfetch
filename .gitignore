@@ -6,3 +6,5 @@ debian/.debhelper/
 debian/fetch/
 debian/*.substvars
 debian/*.debhelper.log
+flatpak/build
+flatpak/.flatpak-builder

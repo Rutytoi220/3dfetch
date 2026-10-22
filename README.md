@@ -26,7 +26,12 @@ drag the logo to rotate it by hand, release to fling it spinning.
 
 ## Install
 
+### From source
+
 ```
+git clone https://github.com/Rutytoi220/3dfetch
+cd 3dfetch
+make
 sudo make install
 ```
 
@@ -37,6 +42,54 @@ program, so you can launch it with whichever name you prefer:
 
 ```
 3dfetch
+```
+
+### Prebuilt binaries
+
+Grab a binary from the [releases page](https://github.com/Rutytoi220/3dfetch/releases):
+
+```
+tar xf 3dfetch-linux-x86_64.tar.gz
+sudo install -m 755 3dfetch-linux-x86_64 /usr/local/bin/3dfetch
+```
+
+There are builds for x86_64 and aarch64, with checksums in `SHA256SUMS`.
+
+### Flatpak
+
+The Flatpak lives in [flatpak/](flatpak/) and is being submitted to
+Flathub. Once it is accepted:
+
+```
+flatpak install flathub io.github.rutytoi220.fetch3d
+flatpak run io.github.rutytoi220.fetch3d
+```
+
+It can also be built and installed locally:
+
+```
+flatpak-builder --user --install flatpak/build flatpak/io.github.rutytoi220.fetch3d.yml
+```
+
+The manifest bundles fastfetch, which draws the logos, so the Flatpak
+picks the right one for your distribution.
+
+### Homebrew
+
+```
+brew install --cask rutytoi/tap/3dfetch
+```
+
+### Arch Linux
+
+```
+yay -S 3dfetch-bin
+```
+
+### Nix
+
+```
+nix run github:Rutytoi220/3dfetch
 ```
 
 ## Colors
