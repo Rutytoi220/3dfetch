@@ -1,4 +1,4 @@
-app-id: io.github.rutytoi220.3dfetch
+app-id: io.github.rutytoi220.fetch3d
 runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
@@ -7,7 +7,6 @@ command: 3dfetch
 finish-args:
   # The tool reads the host's /etc/os-release to work out which distro logo
   # to draw, and needs the host's /proc and /sys for the system info.
-  - --filesystem=/etc/os-release:ro
   - --filesystem=host-os:ro
   - --share=ipc
   - --socket=fallback-x11
@@ -46,14 +45,26 @@ modules:
     sources:
       - type: archive
         url: https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/2.70.0.tar.gz
-        sha256: FASTFETCH_SHA256
+        sha256: 8aa01bd3faff2be1d94f231d76489ce6d9f781f51f6e93eafe82359d6d8669af
 
   - name: 3dfetch
     buildsystem: simple
     build-commands:
       - make
       - make install DESTDIR=/app PREFIX=
+      - install -Dm644 io.github.rutytoi220.fetch3d.desktop
+        /app/share/applications/io.github.rutytoi220.fetch3d.desktop
+      - install -Dm644 io.github.rutytoi220.fetch3d.metainfo.xml
+        /app/share/metainfo/io.github.rutytoi220.fetch3d.metainfo.xml
+      - install -Dm644 io.github.rutytoi220.fetch3d.svg
+        /app/share/icons/hicolor/scalable/apps/io.github.rutytoi220.fetch3d.svg
     sources:
       - type: archive
         url: https://github.com/Rutytoi220/3dfetch/archive/refs/tags/v0.1.0.tar.gz
-        sha256: 3DFETCH_SHA256
+        sha256: 246986c571be227d64342e1f3d2da39dbb3b596b4a80c07a61be27c726c10792
+      - type: file
+        path: io.github.rutytoi220.fetch3d.desktop
+      - type: file
+        path: io.github.rutytoi220.fetch3d.metainfo.xml
+      - type: file
+        path: io.github.rutytoi220.fetch3d.svg

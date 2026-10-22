@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.rutytoi220.fetch3d</id>
+
+  <name>3dfetch</name>
+  <summary>Spin your distro logo in 3D with live system info</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>ISC</project_license>
+
+  <developer id="io.github.rutytoi220">
+    <name>Rutytoi220</name>
+  </developer>
+
+  <description>
+    <p>
+      3dfetch turns your distribution's logo into a rotating 3D relief and
+      puts your system info next to it. The logo is turned into a point
+      cloud based on the visual density of its characters and rendered with
+      Blinn-Phong shading, while the info updates live.
+    </p>
+    <p>
+      The labels are painted in the color the logo is drawn in, so the text
+      always matches the logo next to it. You can drag the logo with the
+      mouse to spin it by hand and let go to fling it.
+    </p>
+    <p>
+      Every logo fastfetch knows works, so whatever you run you get your
+      own distro's logo. A custom logo in ~/.config/fetch/logo.txt works
+      too, and the fields that are shown can be picked in
+      ~/.config/fetch/config.
+    </p>
+    <p>Press any key to quit. The keypress passes through to your shell.</p>
+  </description>
+
+  <launchable type="desktop-id">io.github.rutytoi220.fetch3d.desktop</launchable>
+
+  <url type="homepage">https://github.com/Rutytoi220/3dfetch</url>
+  <url type="bugtracker">https://github.com/Rutytoi220/3dfetch/issues</url>
+  <url type="vcs-browser">https://github.com/Rutytoi220/3dfetch</url>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.1.0" date="2026-10-22">
+      <description>
+        <p>First release.</p>
+        <ul>
+          <li>Installed as both 3dfetch and fetch</li>
+          <li>The info labels take the color of the logo</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/main/flatpak/screenshots/arch.png</image>
+      <caption>Arch Linux</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/main/flatpak/screenshots/ubuntu.png</image>
+      <caption>Ubuntu</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/main/flatpak/screenshots/bazzite.png</image>
+      <caption>Bazzite</caption>
+    </screenshot>
+  </screenshots>
+</component>

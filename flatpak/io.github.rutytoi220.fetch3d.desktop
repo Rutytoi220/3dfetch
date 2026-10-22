@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=3dfetch
+GenericName=Fetch
+Comment=Spin your distro logo in 3D with live system info
+Exec=3dfetch
+Icon=io.github.rutytoi220.fetch3d
+Terminal=true
+Type=Application
+Categories=System;ConsoleOnly;
+Keywords=system;info;distro;logo;ascii;terminal;3d;
