@@ -1,5 +1,5 @@
 Name:           3dfetch
-Version:        0.3.0
+Version:        0.4.0
 Release:        1.%(date +%%Y%%m%%d)%{?dist}
 Summary:        Animated 3D fetch tool for your terminal
 

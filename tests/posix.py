@@ -212,6 +212,22 @@ class FetchTests(unittest.TestCase):
             self.assertNotIn(b"\x1b[0m", result.stdout)
             self.assertNotIn(b"\x1b[1;", result.stdout)
 
+    def test_nggyu(self):
+        # The rickroll replaces the logo with Rick, dancing.
+        result = self.run_fetch(["--frames", "3", "--nggyu", "--no-info"])
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(b"Never gonna give you up", result.stdout)
+        self.assertIn(b".-'''-.", result.stdout)
+        # The notes are there too.
+        self.assertIn("♪".encode(), result.stdout)
+        # And it still draws more than one frame, so the dance moves.
+        self.assertGreater(result.stdout.count(b"\x1b[H"), 1)
+
+    def test_nggyu_no_color(self):
+        result = self.run_fetch(["--frames", "2", "--nggyu", "--no-color"])
+        self.assertEqual(result.returncode, 0)
+        self.assertNotIn(b"\x1b[1;", result.stdout)
+
     def test_program_name_follows_argv(self):
         # "make install" also installs the binary as "3dfetch"; the tool
         # should report the name it was invoked with.

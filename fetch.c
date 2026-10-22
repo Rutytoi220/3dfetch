@@ -4087,6 +4087,148 @@ static void build_points(void) {
 static const char *color_inner = "\033[1;37m";
 static const char *color_outer = "\033[1;35m";
 
+// --- The rickroll ---
+// --nggyu swaps the spinning logo for Rick. Two poses, and a bob on top of
+// them, so it looks like it's dancing.
+#define RICK_W 25
+#define RICK_H 14
+
+static const char *rick_pose_a[RICK_H] = {
+    "        .-'''-.",
+    "       /  o o  \\",
+    "      |    ^    |",
+    "       \\  ___  /",
+    "        '-----'",
+    "         |   |",
+    "      ,--'   '--.",
+    "     /           \\",
+    "    |             |",
+    "     \\           /",
+    "      '---------'",
+    "        /     \\",
+    "       /       \\",
+    "      |         |",
+};
+
+static const char *rick_pose_b[RICK_H] = {
+    "        .-'''-.",
+    "       /  o o  \\",
+    "      |    ^    |",
+    "       \\  ___  /",
+    "        '-----'",
+    "         |   |",
+    "      ,--'   '--.",
+    "     /           \\",
+    "    |             |",
+    "     \\           /",
+    "      '---------'",
+    "         \\   /",
+    "          \\ /",
+    "           V",
+};
+
+static const char *rick_lyrics[] = {
+    "Never gonna give you up",
+    "Never gonna give you down",
+    "Never gonna run around and desert you",
+    "Never gonna give you up, never gonna give you down",
+    "Never gonna tell a lie",
+    "Never gonna give you up, never gonna give you down",
+    "Never gonna give you up!",
+};
+
+// What the canvas shows instead of the 3D logo, one character per cell.
+static char rick_cell[MAX_HEIGHT][ANIM_WIDTH];
+// The notes, the figure and the lyrics each get their own colour.
+static int rick_color[MAX_HEIGHT][ANIM_WIDTH];
+
+#define RICK_C_FIGURE 0
+#define RICK_C_NOTE 1
+#define RICK_C_LYRIC 2
+// Placeholders in the cell for the two note characters, so a cell stays one
+// byte wide.
+#define RICK_NOTE_A '\x01'
+#define RICK_NOTE_B '\x02'
+
+// The notes go in yellow and the lyrics in bright white, so they read
+// differently from the figure.
+static const char *note_color = "\033[1;33m";
+static const char *lyric_color = "\033[1;97m";
+// The figure wears the same colour as the labels, so it looks like part of
+// the rest of the thing.
+static char figure_color[48] = "\033[1;35m";
+
+// Build the canvas for this frame. The figure bobs up and down and swaps
+// between the two poses, and the lyric line changes every so often.
+static void build_rickroll(int frame) {
+  for (int i = 0; i < render_height; i++) {
+    // A zero cell is empty. A space is a space, and stays part of whatever
+    // colour run it is in.
+    memset(rick_cell[i], 0, anim_width);
+    memset(rick_color[i], RICK_C_FIGURE, anim_width * sizeof(int));
+  }
+
+  // The dance: swap pose every other frame, and hop every fourth.
+  int pose = (frame / 2) % 2;
+  int bob = ((frame / 2) % 4 < 2) ? 0 : 1;
+  const char **art = pose ? rick_pose_b : rick_pose_a;
+
+  // Centre the figure in the canvas.
+  int art_x = (anim_width - RICK_W) / 2;
+  if (art_x < 0)
+    art_x = 0;
+  int art_y = (render_height - RICK_H) / 2;
+  if (art_y < 0)
+    art_y = 0;
+  if (art_y > MAX_HEIGHT - RICK_H)
+    art_y = MAX_HEIGHT - RICK_H;
+
+  for (int r = 0; r < RICK_H; r++) {
+    int y = art_y + r - bob;
+    if (y < 0 || y >= MAX_HEIGHT)
+      continue;
+    const char *line = art[r];
+    for (int c = 0; line[c]; c++) {
+      int x = art_x + c;
+      if (x < 0 || x >= anim_width)
+        continue;
+      if (line[c] == ' ')
+        continue;
+      rick_cell[y][x] = line[c];
+      rick_color[y][x] = RICK_C_FIGURE;
+    }
+  }
+
+  // A couple of notes drifting about.
+  static const int note_x[4] = {4, 9, 14, 19};
+  for (int n = 0; n < 4; n++) {
+    int x = art_x + note_x[n] + ((frame / 2 + n) % 3);
+    int y = art_y - 1 - ((frame / 3 + n) % 3);
+    if (x < 0 || x >= anim_width || y < 0 || y >= MAX_HEIGHT)
+      continue;
+    rick_cell[y][x] = (n % 2) ? RICK_NOTE_B : RICK_NOTE_A;
+    rick_color[y][x] = RICK_C_NOTE;
+  }
+
+  // The lyric, on a line under the figure.
+  int lyric = (frame / 40) % (int)(sizeof(rick_lyrics) / sizeof(rick_lyrics[0]));
+  const char *text = rick_lyrics[lyric];
+  int len = (int)strlen(text);
+  int tx = (anim_width - len) / 2;
+  int ty = art_y + RICK_H + 1;
+  if (ty >= render_height)
+    ty = render_height - 1;
+  if (ty < 0)
+    ty = 0;
+  for (int c = 0; c < len; c++) {
+    int x = tx + c;
+    if (x < 0 || x >= anim_width)
+      continue;
+    rick_cell[ty][x] = text[c];
+    rick_color[ty][x] = RICK_C_LYRIC;
+  }
+}
+
 // --- Distro brand colors ---
 // The logo is painted in the distro's brand color and the labels take the
 // very same color, so the text always matches the logo next to it. r/g/b
@@ -4367,6 +4509,7 @@ int main(int argc, char **argv) {
   int rotate_x = 1, rotate_y = 1;
   float speed = 1.0f;
   int show_info = 1;
+  int rickroll_mode = 0;
   int max_frames = 2000;
   const char *shading = NULL;
   const char *shading_mode = NULL;
@@ -4399,6 +4542,7 @@ int main(int argc, char **argv) {
           "  --depth <float>           Scale the 3D depth (default 1.0)\n"
           "  --height <n>              Override render height in rows\n"
           "  --no-info                 Just the logo, no system info\n"
+          "  --nggyu                   Never gonna give you up\n"
           "  --no-color                Disable logo coloring\n"
           "  --frames <n>              Stop after n frames (default 2000)\n"
           "  --infinite                Run forever (keypress or Ctrl-C to "
@@ -4478,6 +4622,8 @@ int main(int argc, char **argv) {
       if (!parse_number_any(option, argv[++i], &speed))
         return 1;
       speed_set = 1;
+    } else if (strcmp(argv[i], "--nggyu") == 0) {
+      rickroll_mode = 1;
     } else if (strcmp(argv[i], "--no-info") == 0) {
       show_info = 0;
     } else if (strcmp(argv[i], "--no-color") == 0) {
@@ -4744,6 +4890,9 @@ int main(int argc, char **argv) {
   float drag_vx = 0.0f, drag_vy = 0.0f;
   struct timespec last_refresh = {0, 0};
 
+  if (rickroll_mode)
+    snprintf(figure_color, sizeof(figure_color), "\033[1;%sm", label_color);
+
   for (int frame = 0; max_frames == 0 || frame < max_frames; frame++) {
     // A faster spin gets more frames a second so it stays smooth instead of
     // jumping, up to a point. Past that the frames are as fast as they can
@@ -4860,6 +5009,8 @@ int main(int argc, char **argv) {
       if (should_break) break;
     }
     if (should_break) break;
+    if (rickroll_mode)
+      build_rickroll(frame);
     // Handle terminal resize: recompute the same layout as startup
     if (term_resized) {
       term_resized = 0;
@@ -4873,6 +5024,8 @@ int main(int argc, char **argv) {
         printf("\033[2J");
         fflush(stdout);
       }
+      if (rickroll_mode)
+        build_rickroll(frame);
     }
     // Refresh fast dynamic fields every ~1 second.
     // Only uptime/memory/swap — they're pure /proc reads, no popen,
@@ -5021,6 +5174,20 @@ int main(int argc, char **argv) {
 
       if (!use_color) {
         for (int j = 0; j < aw && p + 8 < end; j++) {
+          if (rickroll_mode) {
+            char ch = (i < MAX_HEIGHT && j < anim_width) ? rick_cell[i][j] : 0;
+            if (ch == 0) {
+              *p++ = ' ';
+              continue;
+            }
+            if (ch == RICK_NOTE_A || ch == RICK_NOTE_B) {
+              memcpy(p, ch == RICK_NOTE_A ? "\xE2\x99\xAA" : "\xE2\x99\xAB", 3);
+              p += 3;
+            } else {
+              *p++ = ch;
+            }
+            continue;
+          }
           int c = 0;
           const char *sc = cell_glyph(i, j, smax, &c);
           if (!sc) { *p++ = ' '; continue; }
@@ -5030,7 +5197,38 @@ int main(int argc, char **argv) {
         }
       } else {
         int prev_color = -1;
+        int prev_kind = -1;
         for (int j = 0; j < aw && p + cell_headroom + 8 < end; j++) {
+          if (rickroll_mode) {
+            // Rick dances in place of the logo.
+            char ch = (i < MAX_HEIGHT && j < anim_width) ? rick_cell[i][j] : 0;
+            if (ch == 0) {
+              if (prev_kind != -1) {
+                memcpy(p, reset_seq, 4);
+                p += 4;
+                prev_kind = -1;
+              }
+              *p++ = ' ';
+              continue;
+            }
+            int kind = (i < MAX_HEIGHT && j < anim_width) ? rick_color[i][j] : 0;
+            if (kind != prev_kind) {
+              const char *cs = (kind == RICK_C_NOTE) ? note_color
+                             : (kind == RICK_C_LYRIC) ? lyric_color
+                                                      : figure_color;
+              int clen = (int)strlen(cs);
+              memcpy(p, cs, clen);
+              p += clen;
+              prev_kind = kind;
+            }
+            if (ch == RICK_NOTE_A || ch == RICK_NOTE_B) {
+              memcpy(p, ch == RICK_NOTE_A ? "\xE2\x99\xAA" : "\xE2\x99\xAB", 3);
+              p += 3;
+            } else {
+              *p++ = ch;
+            }
+            continue;
+          }
           int c = 0;
           const char *sc = cell_glyph(i, j, smax, &c);
           if (!sc) {
@@ -5062,6 +5260,9 @@ int main(int argc, char **argv) {
           }
         }
         if (prev_color != -1 && p + 4 < end) {
+          memcpy(p, reset_seq, 4); p += 4;
+        }
+        if (prev_kind != -1 && p + 4 < end) {
           memcpy(p, reset_seq, 4); p += 4;
         }
       }
