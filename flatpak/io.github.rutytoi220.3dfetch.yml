@@ -1,0 +1,59 @@
+app-id: io.github.rutytoi220.3dfetch
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: 3dfetch
+
+finish-args:
+  # The tool reads the host's /etc/os-release to work out which distro logo
+  # to draw, and needs the host's /proc and /sys for the system info.
+  - --filesystem=/etc/os-release:ro
+  - --filesystem=host-os:ro
+  - --share=ipc
+  - --socket=fallback-x11
+  - --device=dri
+  # The config and the custom logo live in the user's config directory.
+  - --filesystem=xdg-config/fetch:create
+  - --filesystem=xdg-cache/fetch:create
+
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/man
+  - /share/doc
+  - /share/licenses
+  - /share/bash-completion
+  - '*.la'
+  - '*.a'
+
+modules:
+  # fastfetch draws the distro logos. It is not a dependency of the tool
+  # itself, but without it there is no logo to spin.
+  - name: fastfetch
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DBUILD_FLASHFETCH=OFF
+      - -DBUILD_TESTS=OFF
+      - -DENABLE_IMAGE_LOGO=OFF
+      - -DENABLE_ZLIB=OFF
+      - -DENABLE_LUA=OFF
+      - -DENABLE_LIBZFS=OFF
+      - -DENABLE_LTO=OFF
+      - -DCMAKE_INSTALL_PREFIX=/app
+    sources:
+      - type: archive
+        url: https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/2.70.0.tar.gz
+        sha256: FASTFETCH_SHA256
+
+  - name: 3dfetch
+    buildsystem: simple
+    build-commands:
+      - make
+      - make install DESTDIR=/app PREFIX=
+    sources:
+      - type: archive
+        url: https://github.com/Rutytoi220/3dfetch/archive/refs/tags/v0.1.0.tar.gz
+        sha256: 3DFETCH_SHA256

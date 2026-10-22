@@ -1,6 +1,7 @@
 import os
 import platform
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -127,34 +128,38 @@ class FetchTests(unittest.TestCase):
                     self.assertTrue(result.stdout)
 
     def test_labels_take_the_logo_color(self):
-        # The labels wear the color the logo is drawn in.
+        # The labels wear the color the logo is drawn in. Without fastfetch
+        # there is no colored logo, so they fall back to the brand color.
+        has_fastfetch = shutil.which("fastfetch") is not None
         logos = {
-            "arch": 36,
-            "ubuntu": 31,
-            "bazzite": 36,
-            "redhat": 31,
-            "linuxmint": 32,
-            "fedora": 34,
-            "gentoo": 35,
+            "arch": ("\x1b[1;36m", "\x1b[1;38;2;0;170;238m"),
+            "ubuntu": ("\x1b[1;31m", "\x1b[1;38;2;233;84;32m"),
+            "bazzite": ("\x1b[1;36m", "\x1b[1;38;2;138;43;226m"),
+            "redhat": ("\x1b[1;31m", "\x1b[1;38;2;238;0;0m"),
+            "linuxmint": ("\x1b[1;32m", "\x1b[1;38;2;134;190;67m"),
+            "fedora": ("\x1b[1;34m", "\x1b[1;38;2;60;110;180m"),
+            "gentoo": ("\x1b[1;35m", "\x1b[1;38;2;122;108;179m"),
         }
         with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
             home = Path(directory)
-            for logo, code in logos.items():
-                with self.subTest(logo=logo):
+            for logo, escapes in logos.items():
+                with self.subTest(logo=logo, fastfetch=has_fastfetch):
+                    escape = escapes[0] if has_fastfetch else escapes[1]
                     result = self.run_fetch(["--frames", "1", "--logo", logo], home)
                     self.assertEqual(result.returncode, 0)
-                    self.assertIn(f"\x1b[1;{code}mOS".encode(), result.stdout)
+                    self.assertIn((escape + "OS").encode(), result.stdout)
 
     def test_logo_and_labels_share_one_color(self):
         # The logo keeps its own colors and the labels wear the same one.
+        has_fastfetch = shutil.which("fastfetch") is not None
+        escape = "\x1b[1;36m" if has_fastfetch else "\x1b[1;38;2;0;170;238m"
         with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
             home = Path(directory)
             result = self.run_fetch(["--frames", "1", "--logo", "arch"], home)
             self.assertEqual(result.returncode, 0)
-            escape = b"\x1b[1;36m"
-            self.assertIn(escape + b"OS", result.stdout)
+            self.assertIn((escape + "OS").encode(), result.stdout)
             # The logo itself is painted in it too, not just the labels.
-            self.assertGreater(result.stdout.count(escape), 1)
+            self.assertGreater(result.stdout.count(escape.encode()), 1)
 
     def test_colorless_logo_falls_back_to_brand_color(self):
         # A custom logo without colors of its own gets the brand color, and

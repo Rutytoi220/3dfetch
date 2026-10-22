@@ -18,6 +18,19 @@ jobs:
       - name: Test
         run: make test
 
+      # fastfetch draws the distro logos, so the labels take their color
+      # from it. Test that path too.
+      - name: Install fastfetch
+        run: |
+          curl -sL -o fastfetch.tar.gz \
+            https://github.com/fastfetch-cli/fastfetch/releases/download/2.70.0/fastfetch-linux-amd64.tar.gz
+          tar xzf fastfetch.tar.gz
+          sudo install -m 755 fastfetch /usr/local/bin/fastfetch
+          fastfetch --version
+
+      - name: Test with fastfetch
+        run: make test
+
   macos:
     runs-on: macos-latest
     steps:
