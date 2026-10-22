@@ -316,7 +316,7 @@ colors
 | `--depth <float>` | Scale the 3D depth (default 1.0) |
 | `--height <n>` | Override render height in rows |
 | `--no-info` | Just the logo, no system info |
-| `--nggyu` | A surprise. Try it. |
+| `--nggyu` | Surprise. |
 | `--no-color` | Disable coloring |
 | `--frames <n>` | Stop after n frames (default 2000) |
 | `--infinite` | Run forever (keypress or Ctrl-C to exit) |
