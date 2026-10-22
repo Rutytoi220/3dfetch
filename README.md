@@ -13,6 +13,8 @@ Based on [gentoo.c](https://github.com/areofyl/gentoo.c) and on
 [fetch](https://github.com/areofyl/fetch) by [@areofyl](https://github.com/areofyl),
 which this fork adds the `3dfetch` name and the logo-colored labels to.
 
+> New here? Start with the [getting started guide](docs/tutorial.md).
+
 ## Build & run
 
 ```
@@ -58,21 +60,30 @@ There are builds for x86_64 and aarch64, with checksums in `SHA256SUMS`.
 ### Flatpak
 
 The Flatpak lives in [flatpak/](flatpak/) and is being submitted to
-Flathub. Once it is accepted:
+Flathub. To build and install it yourself:
 
 ```
-flatpak install flathub io.github.rutytoi220.fetch3d
-flatpak run io.github.rutytoi220.fetch3d
+flatpak install --user -y flathub org.flatpak.Builder
+git clone https://github.com/Rutytoi220/3dfetch
+cd 3dfetch
+flatpak run --command=flathub-build org.flatpak.Builder --install flatpak/io.github.rutytoi220._3dfetch.yml
 ```
 
-It can also be built and installed locally:
+Then run it:
 
 ```
-flatpak-builder --user --install flatpak/build flatpak/io.github.rutytoi220.fetch3d.yml
+flatpak run io.github.rutytoi220._3dfetch
 ```
 
-The manifest bundles fastfetch, which draws the logos, so the Flatpak
-picks the right one for your distribution.
+Once it lands on Flathub this gets shorter:
+
+```
+flatpak install flathub io.github.rutytoi220._3dfetch
+```
+
+The manifest bundles fastfetch, which draws the logos, and the app reads
+your host's `/etc/os-release` so it picks the right one for your
+distribution.
 
 ### Homebrew
 
@@ -83,7 +94,7 @@ brew install --cask rutytoi/tap/3dfetch
 ### Arch Linux
 
 ```
-yay -S 3dfetch-bin
+yay -S 3dfetch
 ```
 
 ### Nix

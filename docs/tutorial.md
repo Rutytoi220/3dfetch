@@ -1,0 +1,235 @@
+# Getting started
+
+A short, practical tour. Nothing here is required reading — skim it, grab
+the install command for your system, and come back when you want to change
+something.
+
+## What it actually does
+
+Your distro's logo gets turned into a cloud of points based on how heavy
+each character looks, then spun around in 3D with the system info sitting
+next to it. The info refreshes on its own, so you can leave it running and
+watch your CPU do something interesting.
+
+The labels (`OS`, `Host`, `Kernel`, ...) are painted in the same color the
+logo is drawn in, so the whole thing looks like one piece.
+
+## Install it
+
+Pick whichever one suits you. They all give you the same program.
+
+### Building it yourself
+
+Needs a C compiler and `make`. Nothing else.
+
+```bash
+git clone https://github.com/Rutytoi220/3dfetch
+cd 3dfetch
+make
+sudo make install
+```
+
+If you'd rather not install it system-wide:
+
+```bash
+make
+PREFIX=~/.local make install
+```
+
+### A prebuilt binary
+
+Grab one from the [releases page](https://github.com/Rutytoi220/3dfetch/releases).
+There are builds for x86_64 and aarch64.
+
+```bash
+tar xf 3dfetch-linux-x86_64.tar.gz
+sudo install -m 755 3dfetch-linux-x86_64 /usr/local/bin/3dfetch
+```
+
+### Flatpak
+
+This is the one that gets you a button in the software centre, so it's
+worth the extra steps if you'd rather not touch your system at all.
+
+First get the builder, if you don't have it:
+
+```bash
+flatpak install --user -y flathub org.flatpak.Builder
+```
+
+Then build and install the app from the repository:
+
+```bash
+git clone https://github.com/Rutytoi220/3dfetch
+cd 3dfetch
+flatpak run --command=flathub-build org.flatpak.Builder --install flatpak/io.github.rutytoi220._3dfetch.yml
+```
+
+And run it:
+
+```bash
+flatpak run io.github.rutytoi220._3dfetch
+```
+
+The Flatpak bundles fastfetch so it has the logos to draw, and it reads
+your host's `/etc/os-release` so it picks the right one for your machine
+rather than the runtime's.
+
+Once it lands on Flathub, this gets a lot shorter:
+
+```bash
+flatpak install flathub io.github.rutytoi220._3dfetch
+```
+
+### Homebrew
+
+```bash
+brew install --cask rutytoi/tap/3dfetch
+```
+
+### Arch Linux
+
+```bash
+yay -S 3dfetch
+```
+
+### Nix
+
+```bash
+nix run github:Rutytoi220/3dfetch
+```
+
+## Run it
+
+```bash
+3dfetch
+```
+
+It also installs as `fetch`, so if that name is free on your system, use
+it instead. Same program, different name.
+
+Press any key to quit. The keypress goes straight through to your shell
+afterwards, so `3dfetch` and then `q` leaves you with a `q` in your
+prompt — handy if you run it at login.
+
+You can also grab the logo and spin it with the mouse. Click and drag to
+turn it, let go and it keeps going.
+
+## What you can change
+
+Everything lives in `~/.config/fetch/`. Create the directory if it isn't
+there:
+
+```bash
+mkdir -p ~/.config/fetch
+```
+
+### Picking the fields
+
+The config file lists the fields you want, one per line, in the order you
+want them:
+
+```
+os
+host
+kernel
+uptime
+cpu
+gpu
+memory
+disk
+```
+
+**Watch out for this one:** the moment a config file exists, only the
+fields listed in it show up. Delete the file and everything comes back.
+
+### Your own logo
+
+Drop your ASCII art in `~/.config/fetch/logo.txt`. The first line can name
+a distro so the colors match:
+
+```
+# distro: bazzite
+         -/oyddmdhs+:.
+     -odNMMMMMMMMNNmhy+-`
+   -yNMMMMMMMMMMMNNNmmdhy+-
+```
+
+Characters with more visual weight (`@`, `M`, `#`) come out taller in the
+relief, and sparse ones (`.`, `-`, spaces) stay flat, so a bit of variety
+makes for a much better shape. A logo that's all one character looks like
+a pancake.
+
+### Colors
+
+Usually you don't need to touch this — the labels take the logo's color
+and that's that. But if you want a specific color:
+
+```
+label_color=magenta
+```
+
+And if your terminal mangles 24-bit color:
+
+```
+truecolor=0
+```
+
+which drops everything to the nearest of the 16 basic colors.
+
+## Handy flags
+
+```
+3dfetch --logo ubuntu      any logo fastfetch knows
+3dfetch --frames 1         draw one frame and quit (good for screenshots)
+3dfetch --no-info          just the logo
+3dfetch --box              draw a frame around the info
+3dfetch --size 2           twice as big
+3dfetch --speed 0.5        half speed
+3dfetch --help             everything else
+```
+
+## When something looks off
+
+**No logo, or the wrong one.** The logos come from fastfetch. If it isn't
+installed, you get the built-in Gentoo logo instead:
+
+```bash
+sudo apt install fastfetch     # Debian/Ubuntu
+sudo dnf install fastfetch     # Fedora
+sudo pacman -S fastfetch       # Arch
+```
+
+**The labels are the wrong color.** Set `label_color=` in your config and
+it stops mattering what the logo is doing.
+
+**Everything is one flat color and you want the two-tone look.** Set
+`logo_outer` and `logo_inner` in your config:
+
+```
+logo_outer=cyan
+logo_inner=white
+```
+
+**It says it can't load a logo.** Same fastfetch problem as above.
+
+**In a Flatpak the logo doesn't match your distro.** Older Flatpak
+runtimes hide the host's `/etc/os-release`. The app reads
+`/run/host/os-release` as well, so it should sort itself out — if it
+doesn't, you're on an old runtime and it's worth reporting.
+
+## Where things live
+
+| What | Where |
+|---|---|
+| Config | `~/.config/fetch/config` |
+| Custom logo | `~/.config/fetch/logo.txt` |
+| The binary | `/usr/local/bin/3dfetch` (or wherever you put it) |
+| Source | [github.com/Rutytoi220/3dfetch](https://github.com/Rutytoi220/3dfetch) |
+
+## Where it came from
+
+`3dfetch` is a fork of [fetch](https://github.com/areofyl/fetch) by
+[@areofyl](https://github.com/areofyl), which is itself based on
+[gentoo.c](https://github.com/areofyl/gentoo.c). Same ISC license, and
+the original copyright is still intact.
