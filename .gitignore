@@ -11,3 +11,6 @@ flatpak/.flatpak-builder
 .flatpak-builder
 __pycache__/
 tools/__pycache__/
+
+# flatpak-builder output
+flatpak/repo/
