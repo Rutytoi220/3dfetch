@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build for x86_64
+        run: |
+          make
+          mkdir -p dist
+          cp fetch dist/3dfetch-linux-x86_64
+          chmod +x dist/3dfetch-linux-x86_64
+
+      - name: Build for aarch64
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          make clean
+          make CC=aarch64-linux-gnu-gcc fetch
+          mkdir -p dist
+          cp fetch dist/3dfetch-linux-aarch64
+          chmod +x dist/3dfetch-linux-aarch64
+
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS
+
+      - name: Package archives
+        run: |
+          cd dist
+          tar czf 3dfetch-linux-x86_64.tar.gz 3dfetch-linux-x86_64 SHA256SUMS
+          tar czf 3dfetch-linux-aarch64.tar.gz 3dfetch-linux-aarch64 SHA256SUMS
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          body: |
+            ## 3dfetch ${{ github.ref_name }}
+
+            An animated 3D fetch tool that spins your distro logo, with the
+            info labels in the logo's own color.
+
+            ### Install
+
+            ```
+            tar xf 3dfetch-linux-x86_64.tar.gz
+            sudo install -m 755 3dfetch-linux-x86_64 /usr/local/bin/3dfetch
+            ```
+
+            Or build it yourself:
+
+            ```
+            git clone https://github.com/Rutytoi220/3dfetch
+            cd 3dfetch && make && sudo make install
+            ```
+
+            It also installs as `fetch`, and there is a Flatpak and a Homebrew
+            formula.
+          files: |
+            dist/3dfetch-linux-x86_64
+            dist/3dfetch-linux-aarch64
+            dist/3dfetch-linux-x86_64.tar.gz
+            dist/3dfetch-linux-aarch64.tar.gz
+            dist/SHA256SUMS
