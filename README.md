@@ -9,7 +9,9 @@ based on its visual density, and renders it as a rotating 3D relief with
 Blinn-Phong shading. System info is gathered natively with no external
 dependencies. Works on Linux and macOS.
 
-Based on [gentoo.c](https://github.com/areofyl/gentoo.c).
+Based on [gentoo.c](https://github.com/areofyl/gentoo.c) and on
+[fetch](https://github.com/areofyl/fetch) by [@areofyl](https://github.com/areofyl),
+which this fork adds the `3dfetch` name and the logo-colored labels to.
 
 ## Build & run
 
@@ -39,22 +41,19 @@ program, so you can launch it with whichever name you prefer:
 
 ## Colors
 
-The logo is painted in your distribution's brand color, and the info labels
-(`OS`, `Host`, `Kernel`, ...) take that very same color, so the text always
-matches the logo next to it:
+The info labels (`OS`, `Host`, `Kernel`, ...) take the color the logo is
+drawn in, so the text always matches the logo next to it. The logo keeps
+its own colors:
 
-| Distro | Color | | Distro | Color |
-|---|---|---|---|---|
-| Arch | light blue | | Ubuntu | orange |
-| Bazzite | purple | | Linux Mint | green |
-| Red Hat / RHEL | red | | Fedora | blue |
-| Debian | red | | NixOS | blue |
-| openSUSE | green | | Void | green |
-| Gentoo | violet | | Alpine | blue |
+```
+3dfetch
+```
 
-White highlights in the logo are kept as they are. For a distribution that
-isn't on the list, the labels follow the logo's own color, and failing that
-the `ANSI_COLOR` hint in `/etc/os-release`.
+On Arch that means the text is the same bright blue as the logo, on Bazzite
+the same purple, on Linux Mint the same green, and so on. A logo that
+carries no colors of its own (a custom `logo.txt`, say) falls back to the
+distribution's brand color, and then to the `ANSI_COLOR` hint in
+`/etc/os-release`.
 
 Set `label_color` in your config to override the label color, or
 `truecolor=0` if your terminal can't do 24-bit color.

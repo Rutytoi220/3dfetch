@@ -30,7 +30,7 @@ yMMNNNNNNNMMMMMNNMmhs+/-`
   `-//////:--.
 ```
 
-The name also drives the info label colors, so the text matches the logo: `# distro: bazzite` gives you purple labels, `# distro: ubuntu` gives you orange ones.
+The name also drives the color of a logo that has no colors of its own: `# distro: bazzite` gives you a purple logo and purple labels, `# distro: ubuntu` gives you orange ones.
 
 Without this line, the logo uses the default two-tone colors (`logo_outer` and `logo_inner` from config).
 

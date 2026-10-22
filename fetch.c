@@ -388,10 +388,6 @@ static int sysctl_int(const char *name) {
 
 // --- Logo storage (codepoint-aware) ---
 
-// Cell color code standing for "the distro's brand color". The logo's own
-// colors are 30-37/90-97, so 128 is free for this.
-#define LOGO_COLOR_BRAND 128
-
 #define MAX_LOGO_ROWS 64
 #define MAX_LOGO_COLS 128
 // Raw byte data
@@ -4064,11 +4060,6 @@ static void build_points(void) {
 static const char *color_inner = "\033[1;37m";
 static const char *color_outer = "\033[1;35m";
 
-// The brand color as a full escape sequence, used by the cells that were
-// repainted with it. The labels use the same color (see label_color).
-static char brand_escape[32] = "";
-static int brand_escape_len = 0;
-
 // --- Distro brand colors ---
 // The logo is painted in the distro's brand color and the labels take the
 // very same color, so the text always matches the logo next to it. r/g/b
@@ -4239,18 +4230,6 @@ static int logo_main_color(void) {
   return 0;
 }
 
-// Repaint the logo's main color with the distro's brand color, so the logo
-// and the labels end up in exactly the same color. White highlights and
-// any other accent colors are left alone.
-static void recolor_logo(int main_color) {
-  if (!main_color)
-    return;
-  for (int r = 0; r < logo_rows; r++)
-    for (int c = 0; c < logo_cell_counts[r]; c++)
-      if (logo_cell_color[r][c] == main_color)
-        logo_cell_color[r][c] = LOGO_COLOR_BRAND;
-}
-
 // Pick the label color from the ANSI_COLOR hint in an os-release file. Used
 // for distros that aren't in the brand table above.
 static void set_label_from_os_release(const char *path) {
@@ -4295,32 +4274,24 @@ static void set_label_from_os_release(const char *path) {
   fclose(fp);
 }
 
+// The labels follow the logo: whatever color the logo is drawn in is the
+// color the text wears, so the two always match on screen. The logo keeps
+// the colors it came with.
 static void set_distro_colors(const char *distro) {
   const distro_brand *brand = lookup_brand(distro);
 
   // The logo's own main color, if it has one.
   int main_color = logo_main_color();
 
-  if (brand) {
-    // Repaint the logo in the distro's brand color and give the labels the
-    // very same color, so the text always matches the logo next to it.
-    if (main_color)
-      recolor_logo(main_color);
-    if (terminal_truecolor()) {
-      brand_escape_len = snprintf(brand_escape, sizeof(brand_escape),
-                                  "\033[1;38;2;%d;%d;%dm", brand->r, brand->g,
-                                  brand->b);
-    } else {
-      brand_escape_len = snprintf(brand_escape, sizeof(brand_escape),
-                                  "\033[1;%dm", brand->fallback);
-    }
-    set_label_rgb(brand->r, brand->g, brand->b, brand->fallback);
-    // Logos that carry no colors of their own take the brand color too.
-    set_logo_rgb(brand->r, brand->g, brand->b, brand->fallback);
-  } else if (main_color) {
-    // No brand color for this distro: let the labels follow the logo.
+  if (main_color) {
+    // The logo knows its color, so the labels take it as it is.
     if (!label_color_set)
       snprintf(label_color, sizeof(label_color), "%d", main_color);
+  } else if (brand) {
+    // A logo without colors of its own gets painted in the brand color, and
+    // the labels go along with it.
+    set_label_rgb(brand->r, brand->g, brand->b, brand->fallback);
+    set_logo_rgb(brand->r, brand->g, brand->b, brand->fallback);
   } else {
     set_label_from_os_release("/etc/os-release");
   }
@@ -4977,9 +4948,11 @@ int main(int argc, char **argv) {
     static int ansi_len[128];
     int inner_len = strlen(color_inner);
     int outer_len = strlen(color_outer);
-    // The brand color escape is longer than a basic one, so the row loop
-    // has to leave room for it.
-    int cell_headroom = brand_escape_len > 8 ? brand_escape_len : 8;
+    // The logo colors can be a full 24-bit escape, which is longer than a
+    // basic one, so the row loop has to leave room for them.
+    int cell_headroom = outer_len > inner_len ? outer_len : inner_len;
+    if (cell_headroom < 8)
+      cell_headroom = 8;
 
     if (top_padding > 0) {
       memset(p, '\n', top_padding);
@@ -5014,10 +4987,7 @@ int main(int argc, char **argv) {
             *p++ = ' ';
           } else {
             if (c != prev_color) {
-              if (c == LOGO_COLOR_BRAND && brand_escape_len > 0) {
-                memcpy(p, brand_escape, brand_escape_len);
-                p += brand_escape_len;
-              } else if (logo_has_ansi && c > 0 && c < 128) {
+              if (logo_has_ansi && c > 0 && c < 128) {
                 // Build ANSI escape lazily on first use
                 if (!ansi_len[c]) {
                   ansi_len[c] = snprintf(ansi_tbl[c], sizeof(ansi_tbl[c]),

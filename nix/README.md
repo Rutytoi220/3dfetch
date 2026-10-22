@@ -95,9 +95,8 @@ Options:
   ```
   Ex: ```labelColor = "blue";```
 
-  Leave it unset (the default) to use the distro's own brand color: light blue
-  on Arch, purple on Bazzite, red on Red Hat, orange on Ubuntu, green on
-  Linux Mint, and so on.
+  Leave it unset (the default) to let the labels take the color the logo is
+  drawn in, so the text always matches the logo next to it.
 
 ### truecolor
   Options:

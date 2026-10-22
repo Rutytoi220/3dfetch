@@ -126,35 +126,48 @@ class FetchTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 0)
                     self.assertTrue(result.stdout)
 
-    def test_distro_brand_colors(self):
-        # The info labels are painted in the distro's brand color.
-        brands = {
-            "ubuntu": (233, 84, 32),
-            "bazzite": (138, 43, 226),
-            "arch": (0, 170, 238),
-            "redhat": (238, 0, 0),
-            "linuxmint": (134, 190, 67),
-            "fedora": (60, 110, 180),
+    def test_labels_take_the_logo_color(self):
+        # The labels wear the color the logo is drawn in.
+        logos = {
+            "arch": 36,
+            "ubuntu": 31,
+            "bazzite": 36,
+            "redhat": 31,
+            "linuxmint": 32,
+            "fedora": 34,
+            "gentoo": 35,
         }
         with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
             home = Path(directory)
-            for logo, (r, g, b) in brands.items():
+            for logo, code in logos.items():
                 with self.subTest(logo=logo):
                     result = self.run_fetch(["--frames", "1", "--logo", logo], home)
                     self.assertEqual(result.returncode, 0)
-                    self.assertIn(f"\x1b[1;38;2;{r};{g};{b}mOS".encode(), result.stdout)
+                    self.assertIn(f"\x1b[1;{code}mOS".encode(), result.stdout)
 
     def test_logo_and_labels_share_one_color(self):
-        # The logo is repainted in the brand color and the labels use the
-        # very same one, so the two always match on screen.
+        # The logo keeps its own colors and the labels wear the same one.
         with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
             home = Path(directory)
             result = self.run_fetch(["--frames", "1", "--logo", "arch"], home)
             self.assertEqual(result.returncode, 0)
-            escape = b"\x1b[1;38;2;0;170;238m"
+            escape = b"\x1b[1;36m"
             self.assertIn(escape + b"OS", result.stdout)
             # The logo itself is painted in it too, not just the labels.
             self.assertGreater(result.stdout.count(escape), 1)
+
+    def test_colorless_logo_falls_back_to_brand_color(self):
+        # A custom logo without colors of its own gets the brand color, and
+        # the labels go along with it.
+        with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
+            home = Path(directory)
+            config_dir = home / ".config" / "fetch"
+            config_dir.mkdir(parents=True)
+            (config_dir / "logo.txt").write_text("# distro: bazzite\n  @@  \n@@@@@@\n")
+            result = self.run_fetch(["--frames", "1"], home)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn(b"\x1b[1;38;2;138;43;226mOS", result.stdout)
+            self.assertGreater(result.stdout.count(b"\x1b[1;38;2;138;43;226m"), 1)
 
     def test_label_color_config_overrides_distro(self):
         with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:

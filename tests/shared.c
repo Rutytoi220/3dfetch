@@ -127,21 +127,47 @@ static void test_logo_main_color(void) {
   logo_has_ansi = 1;
 }
 
-// Repainting the logo swaps its main color for the brand one and leaves the
-// white highlights alone.
-static void test_recolor_logo(void) {
-  logo_rows = 2;
-  logo_cell_counts[0] = 4;
-  logo_cell_counts[1] = 4;
-  for (int c = 0; c < 4; c++) {
+// The labels take the color the logo is drawn in.
+static void test_labels_follow_the_logo(void) {
+  // A logo drawn in cyan gives cyan labels.
+  logo_has_ansi = 1;
+  logo_rows = 1;
+  logo_cell_counts[0] = 3;
+  for (int c = 0; c < 3; c++)
     logo_cell_color[0][c] = 36;
+  label_color_set = 0;
+  set_distro_colors("arch");
+  CHECK(strcmp(label_color, "36") == 0);
+
+  // A logo drawn in green with white highlights gives green labels.
+  logo_rows = 2;
+  logo_cell_counts[0] = 3;
+  logo_cell_counts[1] = 3;
+  for (int c = 0; c < 3; c++) {
+    logo_cell_color[0][c] = 32;
     logo_cell_color[1][c] = 37;
   }
-  recolor_logo(36);
-  CHECK(logo_cell_color[0][0] == LOGO_COLOR_BRAND);
-  CHECK(logo_cell_color[0][3] == LOGO_COLOR_BRAND);
-  CHECK(logo_cell_color[1][0] == 37); // the white highlight survives
-  CHECK(logo_cell_color[1][3] == 37);
+  set_distro_colors("linuxmint");
+  CHECK(strcmp(label_color, "32") == 0);
+
+  // A logo without colors of its own falls back to the brand color, and the
+  // logo is painted in it too.
+  logo_has_ansi = 0;
+  label_color_set = 0;
+  config_truecolor = 1;
+  set_distro_colors("bazzite");
+  CHECK(strcmp(label_color, "38;2;138;43;226") == 0);
+  CHECK(strstr(color_outer, "38;2;138;43;226") != NULL);
+
+  // An explicit choice is never overridden.
+  label_color_set = 1;
+  strcpy(label_color, "32");
+  set_distro_colors("bazzite");
+  CHECK(strcmp(label_color, "32") == 0);
+
+  label_color_set = 0;
+  config_truecolor = -1;
+  strcpy(label_color, "35");
 }
 
 static void test_label_color(void) {
@@ -220,7 +246,7 @@ int main(void) {
   test_minimal_logos();
   test_distro_brand_colors();
   test_logo_main_color();
-  test_recolor_logo();
+  test_labels_follow_the_logo();
   test_label_color();
   test_os_release_color();
   printf("Shared unit tests: %s\n", failures ? "FAILED" : "passed");

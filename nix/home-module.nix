@@ -55,7 +55,7 @@ in
         ]
       );
       default = null;
-      description = "Color used for info labels. When unset, the distro's own brand color is used.";
+      description = "Color used for info labels. When unset, the labels take the color the logo is drawn in.";
     };
 
     truecolor = lib.mkOption {
