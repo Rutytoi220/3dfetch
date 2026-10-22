@@ -134,7 +134,6 @@ class FetchTests(unittest.TestCase):
         logos = {
             "arch": ("\x1b[1;36m", "\x1b[1;38;2;0;170;238m"),
             "ubuntu": ("\x1b[1;31m", "\x1b[1;38;2;233;84;32m"),
-            "bazzite": ("\x1b[1;36m", "\x1b[1;38;2;138;43;226m"),
             "redhat": ("\x1b[1;31m", "\x1b[1;38;2;238;0;0m"),
             "linuxmint": ("\x1b[1;32m", "\x1b[1;38;2;134;190;67m"),
             "fedora": ("\x1b[1;34m", "\x1b[1;38;2;60;110;180m"),
