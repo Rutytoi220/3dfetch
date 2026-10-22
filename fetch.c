@@ -838,8 +838,16 @@ static int detect_distro_fastfetch(char *out, int maxlen) {
   return 0;
 }
 
+// The os-release file to read. Inside a Flatpak the one in /etc belongs to
+// the runtime, and the host's file is mounted at /run/host/os-release.
+static const char *os_release_path(void) {
+  if (access("/run/host/os-release", R_OK) == 0)
+    return "/run/host/os-release";
+  return "/etc/os-release";
+}
+
 static int detect_distro_os_release(char *out, int maxlen) {
-  FILE *fp = fopen("/etc/os-release", "r");
+  FILE *fp = fopen(os_release_path(), "r");
   if (!fp)
     return 0;
   char buf[256];
@@ -872,6 +880,10 @@ static int detect_distro(char *out, int maxlen) {
   strncpy(out, "macos", maxlen-1);
   return 1;
 #else
+  // Inside a Flatpak, fastfetch sees the runtime's os-release rather than
+  // the host's, so read the host's file first.
+  if (access("/run/host/os-release", R_OK) == 0)
+    return detect_distro_os_release(out, maxlen);
   if (detect_distro_fastfetch(out, maxlen))
     return 1;
   return detect_distro_os_release(out, maxlen);
@@ -1509,7 +1521,7 @@ static void gather_os(void) {
   }
 #else
   char pretty[128] = "";
-  FILE *fp = fopen("/etc/os-release", "r");
+  FILE *fp = fopen(os_release_path(), "r");
   if (fp) {
     char buf[256];
     while (fgets(buf, sizeof(buf), fp)) {
@@ -4293,7 +4305,7 @@ static void set_distro_colors(const char *distro) {
     set_label_rgb(brand->r, brand->g, brand->b, brand->fallback);
     set_logo_rgb(brand->r, brand->g, brand->b, brand->fallback);
   } else {
-    set_label_from_os_release("/etc/os-release");
+    set_label_from_os_release(os_release_path());
   }
 }
 
