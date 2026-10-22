@@ -48,8 +48,9 @@ sudo install -m 755 3dfetch-linux-x86_64 /usr/local/bin/3dfetch
 
 ### Flatpak
 
-This is the one that gets you a button in the software centre, so it's
-worth the extra steps if you'd rather not touch your system at all.
+It isn't on Flathub yet, so there's no install button to click. The
+manifest is in the repo though, and a Flatpak is the least invasive way to
+try it if you'd rather not touch your system at all.
 
 First get the builder, if you don't have it:
 
@@ -116,13 +117,24 @@ would rather not install anything on the host.
 ### Homebrew
 
 ```bash
-brew install --cask rutytoi/tap/3dfetch
+brew trust Rutytoi220/tap
+brew install Rutytoi220/tap/3dfetch
 ```
+
+Homebrew formula names can't start with a digit, so the formula is called
+`threefetch` and `3dfetch` is an alias for it. You still get the `3dfetch`
+command. On older Homebrew the `brew trust` line just says the command
+doesn't exist — skip it.
 
 ### Arch Linux
 
+It isn't on the AUR yet, so `yay` won't find it. The PKGBUILD is in the
+repo and works as-is:
+
 ```bash
-yay -S 3dfetch
+git clone https://github.com/Rutytoi220/3dfetch
+cd 3dfetch/aur
+makepkg -si
 ```
 
 ### Nix
@@ -238,8 +250,9 @@ There's a flag in `--help` that reads like a dare. Take it:
 3dfetch --nggyu
 ```
 
-We won't say what it does. The system info stays put on the right, so you
-can still watch your machine while whatever it is does its thing.
+We won't say what it does. The system info stays put beside it, or drops
+underneath on a narrow terminal, so you can still watch your machine while
+whatever it is does its thing.
 
 (The artwork is an ASCII portrait from
 [johnsoupir/ASCII_Rickroll](https://github.com/johnsoupir/ASCII_Rickroll).)

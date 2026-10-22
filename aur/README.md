@@ -22,7 +22,7 @@ of its own, so these steps have to be done by you rather than by a bot:
    cd 3dfetch
    cp /path/to/3dfetch/aur/PKGBUILD .
    git add PKGBUILD
-   git commit -m "Initial upload: 3dfetch 0.1.0"
+   git commit -m "Initial upload: 3dfetch 0.5.0"
    git push
    ```
 
@@ -36,7 +36,7 @@ the new source tarball, and push:
 
 ```bash
 updpkgsums
-git commit -am "up to v0.2.0" && git push
+git commit -am "up to v0.6.0" && git push
 ```
 
 `updpkgsums` comes with the `pacman-contrib` package.

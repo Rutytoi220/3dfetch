@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "rickroll.h"
 
 W, H = 96, 36
-COLS = 60
-STEP = 4
+COLS = 95
+STEP = 1
 
 
 def frames_from(text):
@@ -45,9 +45,9 @@ def main():
     with open(OUT, "w") as f:
         f.write("// The Rickroll art for --nggyu.\n")
         f.write("//\n")
-        f.write("// An ASCII portrait of Rick Astley, cropped to the columns the\n")
-        f.write("// logo canvas has. Every fourth frame of the original animation\n")
-        f.write("// is kept, which is about eight frames a second when played back.\n")
+        f.write("// An ASCII portrait of Rick Astley, at the full width of the\n")
+        f.write("// original image. The animation plays one frame every 120ms, the\n")
+        f.write("// same speed as the original.\n")
         f.write("//\n")
         f.write("// Art from https://github.com/johnsoupir/ASCII_Rickroll\n")
         f.write("//\n")

@@ -32,7 +32,7 @@
       );
 
       overlays.default = final: prev: {
-        areofyl-fetch = final.callPackage ./nix/package.nix { };
+        threefetch = final.callPackage ./nix/package.nix { };
       };
       homeManagerModules.default = import ./nix/home-module.nix;
     };

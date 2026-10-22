@@ -1,13 +1,13 @@
-Source: fetch
+Source: 3dfetch
 Section: utils
 Priority: optional
-Maintainer: Youssef Tarek <amazingritro66@gmail.com>
+Maintainer: Rutytoi220 <154633139+Rutytoi220@users.noreply.github.com>
 Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.6.2
-Homepage: https://github.com/areofyl/fetch
+Homepage: https://github.com/Rutytoi220/3dfetch
 Rules-Requires-Root: no
 
-Package: fetch
+Package: 3dfetch
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Animated 3D fetch tool for your terminal
@@ -17,3 +17,5 @@ Description: Animated 3D fetch tool for your terminal
  renders it as a rotating 3D relief with Blinn-Phong shading. System
  info is gathered natively from /proc, /sys, and GTK config, with no
  external dependencies required.
+ .
+ Installs both the 3dfetch and fetch commands.

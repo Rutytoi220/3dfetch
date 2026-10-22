@@ -1,9 +1,10 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: fetch
-Source: https://github.com/areofyl/fetch
+Upstream-Name: 3dfetch
+Source: https://github.com/Rutytoi220/3dfetch
 
 Files: *
 Copyright: 2026 areofyl
+           2026 Rutytoi220
 License: ISC
 
 License: ISC

@@ -8,7 +8,7 @@
 }:
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = "fetch";
+  pname = "3dfetch";
   version = lib.fileContents ../VERSION;
   __structuredAttrs = true;
   strictDeps = true;
@@ -28,11 +28,10 @@ stdenv.mkDerivation (finalAttrs: {
 
   meta = {
     description = "Animated 3D fetch tool that renders your distro logo as a spinning bas-relief";
-    homepage = "https://github.com/areofyl/fetch";
-    changelog = "https://github.com/areofyl/fetch/releases/tag/v${finalAttrs.version}";
+    homepage = "https://github.com/Rutytoi220/3dfetch";
+    changelog = "https://github.com/Rutytoi220/3dfetch/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.isc;
-    maintainers = with lib.maintainers; [ ghastrum ];
-    mainProgram = "fetch";
+    mainProgram = "3dfetch";
     platforms = lib.platforms.unix;
   };
 })

@@ -22,6 +22,10 @@
 #include <ctype.h>
 #include <errno.h>
 
+// The --nggyu picture. It has to be included up here because the layout
+// wants to know how wide it is.
+#include "rickroll.h"
+
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #include <sys/mount.h>
@@ -3783,14 +3787,15 @@ static const char *cell_glyph(int row, int col, int smax, int *color_out) {
 // Wide terminals get the full 60-col canvas beside the info; medium ones
 // shrink the canvas to keep the info intact; phone-width ones stack the
 // info below the logo. Info lines clip instead of wrapping.
-static void apply_layout(int show_info) {
+static void apply_layout(int show_info, int rickroll) {
   int rows = term_rows; 
   int cols = term_cols;
   if (rows > 1)
     rows--; // leave 1 row margin to prevent scroll-jitter
 
-  // Ideal height: config/flag override > auto-fit to info lines > default
-  int ideal = (int)(36 * size_scale);
+  // Ideal height: config/flag override > auto-fit to info lines > default.
+  // The rickroll wants the picture plus the line under it.
+  int ideal = rickroll ? RICK_FRAME_ROWS + 1 : (int)(36 * size_scale);
   if (config_height > 0) {
     ideal = config_height;
   } else if (show_info && fetch_line_count > 0) {
@@ -3804,7 +3809,7 @@ static void apply_layout(int show_info) {
     ideal = MAX_HEIGHT;
 
   render_height = ideal;
-  anim_width = ANIM_WIDTH;
+  anim_width = rickroll ? RICK_FRAME_COLS : ANIM_WIDTH;
   layout_stacked = 0;
   info_clip_cols = -1;
   stacked_info_rows = 0;
@@ -3824,14 +3829,18 @@ static void apply_layout(int show_info) {
         info_cols = w;
     }
 
-  if (show_info && cols < ANIM_WIDTH + GAP + info_cols) {
+  int target_w = rickroll ? RICK_FRAME_COLS : ANIM_WIDTH;
+  if (show_info && cols < target_w + GAP + info_cols) {
     // Full canvas + info doesn't fit: give the info what it needs and
     // shrink the canvas, unless that leaves the canvas unreadable —
     // then stack the info below a full-width logo instead.
     anim_width = cols - GAP - info_cols;
-    if (anim_width < 20) {
+    // The picture can give up a few columns of background to keep the info
+    // next to it, but not enough that Rick gets cut. Past that, stack.
+    int min_w = rickroll ? RICK_FRAME_COLS * 4 / 5 : 20;
+    if (anim_width < min_w) {
       layout_stacked = 1;
-      anim_width = cols < ANIM_WIDTH ? cols : ANIM_WIDTH;
+      anim_width = cols < target_w ? cols : target_w;
     }
   } else if (anim_width > cols) {
     anim_width = cols;
@@ -3843,12 +3852,23 @@ static void apply_layout(int show_info) {
   int wcap = anim_width * 3 / 5;
 
   if (layout_stacked) {
-    if (render_height > wcap)
+    if (rickroll) {
+      // The picture takes about three quarters of the screen and the info
+      // gets the rest, so a stacked layout still shows most of the fields
+      // without cutting Rick's face off.
+      int want = rows > 0 ? rows * 3 / 4 : RICK_FRAME_ROWS + 1;
+      if (want < 20)
+        want = rows > 0 ? rows : RICK_FRAME_ROWS + 1;
+      if (want > RICK_FRAME_ROWS + 1)
+        want = RICK_FRAME_ROWS + 1;
+      render_height = want;
+    } else if (render_height > wcap) {
       render_height = wcap;
+    }
     stacked_info_rows = fetch_line_count;
     if (rows > 0) {
       int budget = rows - fetch_line_count - 1; // 1 spacer row
-      if (budget < render_height)
+      if (budget < render_height && !rickroll)
         render_height = budget;
       if (render_height < 6)
         render_height = 0; // too small to read: show info only
@@ -4089,7 +4109,6 @@ static const char *color_outer = "\033[1;35m";
 
 // --- The rickroll ---
 // --nggyu swaps the spinning logo for Rick.
-#include "rickroll.h"
 
 #define RICK_C_NOTE 5
 #define RICK_C_LYRIC 6
@@ -4099,25 +4118,25 @@ static const char *color_outer = "\033[1;35m";
 #define RICK_NOTE_B '\x02'
 
 // What the canvas shows instead of the 3D logo, one character per cell.
-static char rick_cell[MAX_HEIGHT][ANIM_WIDTH];
+static char rick_cell[MAX_HEIGHT][RICK_FRAME_COLS];
 // The notes, the lyrics and the shades of the portrait each get their own
 // colour.
-static int rick_color[MAX_HEIGHT][ANIM_WIDTH];
+static int rick_color[MAX_HEIGHT][RICK_FRAME_COLS];
 
 // The notes go in yellow and the lyrics in bright white, so they read
 // differently from the figure.
 static const char *note_color = "\033[1;33m";
 static const char *lyric_color = "\033[1;97m";
 
-// The shades of the portrait, from the lightest to the darkest. The picture
-// is drawn with a handful of characters standing in for the tones of the
-// photo, and the denser the character the darker the tone.
+// The shades of the portrait. The background speckle is kept dim so it
+// doesn't fight the figure, and the characters that draw the face are the
+// brightest, which keeps it readable on a terminal.
 static const char *rick_shades[5] = {
-    "\033[38;2;206;222;240m", // the lightest
-    "\033[38;2;158;182;214m",
-    "\033[38;2;112;140;182m",
-    "\033[38;2;70;95;134m",
-    "\033[38;2;40;58;86m",    // the darkest
+    "\033[38;2;44;62;92m",    // the background speckle, so it stays out of the way
+    "\033[38;2;222;235;250m", // the face and the hands, the brightest bits
+    "\033[38;2;170;196;228m",
+    "\033[38;2;116;144;186m",
+    "\033[38;2;76;100;140m",
 };
 
 // Which shade each character stands for.
@@ -4133,7 +4152,7 @@ static int rick_shade(char c) {
 
 // Build the canvas for this frame: the portrait, a couple of notes
 // drifting about, and the line of text underneath.
-static void build_rickroll(int frame) {
+static void build_rickroll(long long tick) {
   for (int i = 0; i < render_height; i++) {
     // A zero cell is empty. A space is a space, and stays part of whatever
     // colour run it is in.
@@ -4141,20 +4160,28 @@ static void build_rickroll(int frame) {
     memset(rick_color[i], 0, anim_width * sizeof(int));
   }
 
-  int f = frame % RICK_FRAME_COUNT;
+  // The picture runs on its own clock: a frame every 120ms, the same speed
+  // as the original animation. That way --speed doesn't turn the dance into
+  // a blur; it only spins the logo, and there's no logo here.
+  int f = (int)((tick / 120000) % RICK_FRAME_COUNT);
   const char *const *art = rick_frames[f];
+  // Centre the picture. On a narrow terminal it gets cropped on both sides,
+  // rather than losing the right-hand side of it.
   int art_x = (anim_width - RICK_FRAME_COLS) / 2;
-  if (art_x < 0)
-    art_x = 0;
-  // The line of text goes on the last row and the picture sits above it, so
-  // the two never overlap. If the canvas is too short for the picture, the
-  // top of it is what gets cut.
-  int lyric_row = render_height - 1;
-  int art_y = lyric_row - RICK_FRAME_ROWS;
+  // The line of text sits directly under the picture. If the canvas is
+  // taller than the two of them they're centred; if it's shorter, the
+  // bottom of the picture is what gets cut, so the face stays put.
+  int block_h = RICK_FRAME_ROWS + 1;
+  int art_y = 0;
+  if (render_height > block_h)
+    art_y = (render_height - block_h) / 2;
+  int lyric_row = art_y + RICK_FRAME_ROWS;
+  if (lyric_row >= render_height)
+    lyric_row = render_height - 1;
 
   for (int r = 0; r < RICK_FRAME_ROWS; r++) {
     int y = art_y + r;
-    if (y < 0 || y >= MAX_HEIGHT)
+    if (y < 0 || y >= lyric_row || y >= MAX_HEIGHT)
       continue;
     const char *line = art[r];
     for (int c = 0; c < RICK_FRAME_COLS && line[c]; c++) {
@@ -4169,10 +4196,10 @@ static void build_rickroll(int frame) {
   }
 
   // A couple of notes drifting about in the background.
-  static const int note_x[4] = {50, 52, 54, 51};
+  static const int note_x[4] = {84, 86, 88, 85};
   for (int n = 0; n < 4; n++) {
-    int x = art_x + note_x[n] + ((frame / 2 + n) % 3);
-    int y = art_y + 1 + n + ((frame / 3) % 2);
+    int x = art_x + note_x[n] + ((f / 2 + n) % 3);
+    int y = art_y + 1 + n + ((f / 3) % 2);
     // If the canvas is too short for the picture, the notes would be cut off
     // with it, so pull them up to where they can be seen.
     if (y < 0)
@@ -4797,7 +4824,7 @@ int main(int argc, char **argv) {
   }
   if (config_box)
     box_wrap_lines();
-  apply_layout(show_info);
+  apply_layout(show_info, rickroll_mode);
 
   build_points();
 
@@ -4831,8 +4858,9 @@ int main(int argc, char **argv) {
 
   int fetch_start = show_info ? 1 : 0;
   // Tighten render_height to fit the face-on logo + info,
-  // but not when the user explicitly set --height
-  if (config_height == 0) {
+  // but not when the user explicitly set --height. The rickroll is not a
+  // 3D logo, so its height is already exactly what it wants.
+  if (config_height == 0 && !rickroll_mode) {
     int logo_bottom = (int)(fixed_y_center + face_dn) + 2;
     int info_bottom = show_info ? fetch_start + fetch_line_count + 1 : 0;
     int needed = logo_bottom > info_bottom ? logo_bottom : info_bottom;
@@ -4977,14 +5005,14 @@ int main(int argc, char **argv) {
     }
     if (should_break) break;
     if (rickroll_mode)
-      build_rickroll(frame);
+      build_rickroll((long long)frame * frame_us);
     // Handle terminal resize: recompute the same layout as startup
     if (term_resized) {
       term_resized = 0;
       get_term_size(&term_rows, &term_cols);
       int old_h = render_height, old_w = anim_width;
       int old_stacked = layout_stacked, old_clip = info_clip_cols;
-      apply_layout(show_info);
+      apply_layout(show_info, rickroll_mode);
       if (render_height != old_h || anim_width != old_w ||
           layout_stacked != old_stacked || info_clip_cols != old_clip) {
         K1 = 37.0f * logo_height / 36.0f;
@@ -4992,7 +5020,7 @@ int main(int argc, char **argv) {
         fflush(stdout);
       }
       if (rickroll_mode)
-        build_rickroll(frame);
+        build_rickroll((long long)frame * frame_us);
     }
     // Refresh fast dynamic fields every ~1 second.
     // Only uptime/memory/swap — they're pure /proc reads, no popen,

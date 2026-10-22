@@ -1,9 +1,16 @@
 # Flake & Home-module
+
+A quick run:
+
+```bash
+nix run github:Rutytoi220/3dfetch
+```
+
 ## Flake Install
 ```nix
 inputs = {
   ...
-  areofyl-fetch.url = "github:areofyl/fetch";
+  threefetch.url = "github:Rutytoi220/3dfetch";
   ...
 }
 ```
@@ -15,7 +22,7 @@ You also need to import the nix package in your ```home.nix```.
 { pkgs, inputs, ... }: 
 
 {
-  imports = [ inputs.areofyl-fetch.homeManagerModules.default ];
+  imports = [ inputs.threefetch.homeManagerModules.default ];
   
   programs.fetch = {
     enable = true;
@@ -37,7 +44,7 @@ Here is a default configuration:
 { pkgs, inputs, ... }: 
 
 {
-  imports = [ inputs.areofyl-fetch.homeManagerModules.default ];
+  imports = [ inputs.threefetch.homeManagerModules.default ];
   
   programs.fetch = {
     enable = true;

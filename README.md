@@ -1,4 +1,4 @@
-# fetch
+# 3dfetch
 
 A donut.c-inspired fetch tool that spins your distro logo in 3D with live-updating system info.
 
@@ -9,9 +9,11 @@ based on its visual density, and renders it as a rotating 3D relief with
 Blinn-Phong shading. System info is gathered natively with no external
 dependencies. Works on Linux and macOS.
 
-Based on [gentoo.c](https://github.com/areofyl/gentoo.c) and on
+`3dfetch` is a standalone project built on
 [fetch](https://github.com/areofyl/fetch) by [@areofyl](https://github.com/areofyl),
-which this fork adds the `3dfetch` name and the logo-colored labels to.
+which in turn comes from [gentoo.c](https://github.com/areofyl/gentoo.c).
+It adds the `3dfetch` name, keeps the info labels in the color of the logo,
+and a few other things.
 
 > New here? Start with the [getting started guide](docs/tutorial.md).
 
@@ -59,8 +61,9 @@ There are builds for x86_64 and aarch64, with checksums in `SHA256SUMS`.
 
 ### Flatpak
 
-The Flatpak lives in [flatpak/](flatpak/) and is being submitted to
-Flathub. To build and install it yourself:
+The Flatpak manifest lives in [flatpak/](flatpak/). It isn't on Flathub
+yet — that submission has to be opened by hand — so for now build and
+install it yourself:
 
 ```
 flatpak install --user -y flathub org.flatpak.Builder
@@ -95,13 +98,23 @@ distribution.
 ### Homebrew
 
 ```
-brew install --cask rutytoi/tap/3dfetch
+brew trust Rutytoi220/tap
+brew install Rutytoi220/tap/3dfetch
 ```
+
+The formula is called `threefetch` under the hood (Homebrew formula names
+can't start with a digit), with a `3dfetch` alias. It installs both the
+`3dfetch` and `fetch` commands.
 
 ### Arch Linux
 
+Not in the AUR yet — the submission needs a maintainer account. The
+PKGBUILD is in [aur/](aur/) and builds straight from the release tarball:
+
 ```
-yay -S 3dfetch
+git clone https://github.com/Rutytoi220/3dfetch
+cd 3dfetch/aur
+makepkg -si
 ```
 
 ### Nix
@@ -132,122 +145,43 @@ Set `label_color` in your config to override the label color, or
 <details>
 <summary><h2>Package managers</h2></summary>
 
-### Arch Linux (AUR)
-Maintainer: [@PlayRood32](https://github.com/PlayRood32)
-
-You can install `fetch-git` from the AUR using your favorite AUR helper:
-
-```bash
-yay -S fetch-git
-```
-or
-```bash
-paru -S fetch-git
-```
-
-*The `fetch-git` AUR package was not compromised in the AUR package hack. It is maintained and up to date.*
-
 ### Nix
-Maintainer: [@Ghastrum](https://github.com/Ghastrum)
 
-Fetch is available in **[nixpkgs unstable](https://search.nixos.org/packages?channel=unstable&query=fetch#show=fetch)**, or as a [flake](https://github.com/areofyl/fetch/tree/main/nix).
-
-**Try out fetch!**
-```
-nix-shell -p fetch
+```bash
+nix run github:Rutytoi220/3dfetch
 ```
 
-Add to your ```configuration.nix``` or ```home.nix```.
+Or as a flake input, with a home-manager module — see
+[nix/README.md](nix/README.md):
 
 ```nix
-environment.systemPackages = [
-  ...
-  pkgs.fetch
-  ...
-];
+inputs.threefetch.url = "github:Rutytoi220/3dfetch";
 ```
 
-### Homebrew (macOS)
-Maintainer: [@areofyl](https://github.com/areofyl)
+### RPM (Fedora, openSUSE)
 
-```bash
-brew tap areofyl/fetch
-brew install fetch-git
-```
-
-### Fedora Linux
-Maintainer: [@RealOrangeKun](https://github.com/RealOrangeKun)
-
-You can install `fetch` from COPR:
-
-```bash
-sudo dnf copr enable realorangekun/fetch
-sudo dnf install fetch
-```
-
-Or build an RPM package locally:
+Build the spec that ships in the repo:
 
 ```bash
 sudo dnf install @development-tools
 rpmbuild -ba fetch.spec
-sudo dnf install ~/rpmbuild/RPMS/*/fetch-*.rpm
+sudo dnf install ~/rpmbuild/RPMS/*/3dfetch-*.rpm
 ```
 
-### openSUSE
-Maintainer: [@RealOrangeKun](https://github.com/RealOrangeKun)
+On openSUSE, swap `dnf` for `zypper` and install `-t pattern devel_basis`.
 
-You can install `fetch` from the Open Build Service:
+### Debian / Ubuntu
 
-```bash
-sudo zypper addrepo https://download.opensuse.org/repositories/home:RealOrangeKun/openSUSE_Tumbleweed/home:RealOrangeKun.repo
-sudo zypper refresh
-sudo zypper install fetch
-```
-
-Or build an RPM package locally:
-
-```bash
-sudo zypper install -t pattern devel_basis
-rpmbuild -ba fetch.spec
-sudo zypper install ~/rpmbuild/RPMS/*/fetch-*.rpm
-```
-
-### Ubuntu / Debian
-Maintainer: [@RealOrangeKun](https://github.com/RealOrangeKun)
-
-You can install `fetch` from the PPA:
-
-```bash
-sudo add-apt-repository ppa:realorangekun/fetch
-sudo apt update
-sudo apt install fetch
-```
-
-Or build a `.deb` package locally:
+Build a `.deb` locally:
 
 ```bash
 sudo apt install build-essential devscripts debhelper
 dpkg-buildpackage -us -uc -b
-sudo apt install ../fetch_*.deb
+sudo apt install ../3dfetch_*.deb
 ```
 
-Or install it with `pacstall`:
-```
-pacstall -I fetch-git
-```
-
-### Gentoo Linux (GURU)
-Maintainer: [@Leb02](https://github.com/Leb02)
-
-You can install `fetch` from the GURU repository using:
-
-```bash
-eselect repository enable guru
-emaint sync -r guru
-emerge -a app-misc/fetch
-```
-
-As for all GURU packages, you will have to add the package in your `package.accept\_keywords` directory if `~arch` is not already set.
+Nothing here is in a distro repository yet — these build from the repo,
+same as the Flatpak and the AUR PKGBUILD.
 
 </details>
 
@@ -377,19 +311,20 @@ colors
 | `-l`, `--logo <name>` | Use a logo from fastfetch by name |
 | `--rotate-x` | Lock rotation to X axis only |
 | `--rotate-y` | Lock rotation to Y axis only |
-| `-s`, `--speed <float>` | Speed multiplier (default 1.0) |
+| `-s`, `--speed <float>` | Speed multiplier (default 1.0, no upper limit, negative spins backwards) |
 | `--size <float>` | Scale the logo (e.g. 2.0 for double size) |
 | `--depth <float>` | Scale the 3D depth (default 1.0) |
 | `--height <n>` | Override render height in rows |
-| `--box` | Draw a border box around the info block |
 | `--no-info` | Just the logo, no system info |
+| `--nggyu` | A surprise. Try it. |
 | `--no-color` | Disable coloring |
-| `--frames <n>` | Stop after n frames |
-| `--infinite` | Run forever |
+| `--frames <n>` | Stop after n frames (default 2000) |
+| `--infinite` | Run forever (keypress or Ctrl-C to exit) |
 | `--shading-mode <mode>` | `ascii` (default), or opt into sub-cell blocks with `sextants` (2x3) or `blocks` (2x2) |
 | `--shading-chars <str>` | Custom shading ramp, supports UTF-8 |
-| `-h`, `--help` | Show help |
+| `--box` | Draw a border box around the info block |
 | `-V`, `--version` | Show version |
+| `-h`, `--help` | Show this help |
 
 CLI flags override config file settings.
 

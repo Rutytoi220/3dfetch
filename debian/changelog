@@ -1,23 +1,18 @@
-fetch (2.3.0) noble; urgency=medium
+3dfetch (0.5.1) noble; urgency=medium
 
-  * Update to 2.3.0.
+  * Full-width --nggyu artwork, played at the speed of the original.
+  * The info drops below the picture on narrow terminals instead of
+    squeezing it.
+  * Homebrew, AUR, RPM, Debian and Nix packaging all point at this
+    repository now.
 
- -- Youssef Tarek <amazingritro66@gmail.com>  Fri, 21 Aug 2026 23:11:10 +0300
+ -- Rutytoi220 <154633139+Rutytoi220@users.noreply.github.com>  Thu, 22 Oct 2026 18:00:00 +0000
 
-fetch (2.2.1) noble; urgency=medium
+3dfetch (0.5.0) noble; urgency=medium
 
-  * Update to 2.2.1.
+  * First release of the standalone 3dfetch package.
+  * Info labels take the colour of the distro logo.
+  * --speed has no upper limit, and the frame rate follows it.
+  * --nggyu, which we won't spoil.
 
- -- Youssef Tarek <amazingritro66@gmail.com>  Fri, 24 Jul 2026 21:44:30 +0300
-
-fetch (2.2.0.1) noble; urgency=medium
-
-  * Fix Homepage field in debian/control to point at the upstream repo.
-
- -- Youssef Tarek <amazingritro66@gmail.com>  Fri, 24 Jul 2026 18:08:01 +0300
-
-fetch (2.2.0) noble; urgency=medium
-
-  * Initial Debian/Ubuntu packaging.
-
- -- Youssef Tarek <amazingritro66@gmail.com>  Thu, 23 Jul 2026 23:21:34 +0300
+ -- Rutytoi220 <154633139+Rutytoi220@users.noreply.github.com>  Thu, 22 Oct 2026 00:00:00 +0000

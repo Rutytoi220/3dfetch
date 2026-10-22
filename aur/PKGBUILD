@@ -1,6 +1,6 @@
 # Maintainer: Rutytoi220
 pkgname=3dfetch
-pkgver=0.1.0
+pkgver=0.5.0
 pkgrel=1
 pkgdesc="Animated 3D fetch tool that spins your distro logo"
 arch=('x86_64' 'aarch64')
@@ -9,9 +9,8 @@ license=('ISC')
 depends=('fastfetch')
 provides=('3dfetch' 'fetch')
 conflicts=('fetch')
-options=('!strip' '!emptydir')
 source=("$pkgname-$pkgver.tar.gz"::"https://github.com/Rutytoi220/3dfetch/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('071affef13506b5d62d597d09860b52d0a929e6703a42a3f1cc980fc2b0d4def')
+sha256sums=('8c30ee7d1c93727fbd2b105dd5e097cf81551432105fa14abecbecb9a25bac6b')
 
 build() {
   cd "$pkgname-$pkgver"

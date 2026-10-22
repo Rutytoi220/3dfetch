@@ -42,6 +42,15 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="0.5.1" date="2026-10-22">
+      <description>
+        <p>A bigger surprise, and packaging fixes.</p>
+        <ul>
+          <li>--nggyu fills more of the screen and runs at its intended speed</li>
+          <li>Homebrew, AUR, RPM, Debian and Nix packaging point at this repository</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-10-22">
       <description>
         <p>First release.</p>
@@ -58,15 +67,15 @@
 
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/v0.3.0/flatpak/screenshots/arch.png</image>
+      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/v0.5.0/flatpak/screenshots/arch.png</image>
       <caption>Arch Linux</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/v0.3.0/flatpak/screenshots/ubuntu.png</image>
+      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/v0.5.0/flatpak/screenshots/ubuntu.png</image>
       <caption>Ubuntu</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/v0.3.0/flatpak/screenshots/linuxmint.png</image>
+      <image>https://raw.githubusercontent.com/Rutytoi220/3dfetch/v0.5.0/flatpak/screenshots/linuxmint.png</image>
       <caption>Linux Mint</caption>
     </screenshot>
   </screenshots>

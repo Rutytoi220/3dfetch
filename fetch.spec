@@ -1,11 +1,11 @@
 Name:           3dfetch
-Version:        0.5.0
-Release:        1.%(date +%%Y%%m%%d)%{?dist}
+Version:        0.5.1
+Release:        1%{?dist}
 Summary:        Animated 3D fetch tool for your terminal
 
 License:        ISC
-URL:            https://github.com/areofyl/fetch
-Source0:        %{url}/archive/refs/heads/main.tar.gz#/fetch-%{version}.tar.gz
+URL:            https://github.com/Rutytoi220/3dfetch
+Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/3dfetch-%{version}.tar.gz
 
 BuildRequires:  gcc
 BuildRequires:  make
@@ -17,8 +17,10 @@ cloud based on its visual density, and renders it as a rotating 3D relief with
 Blinn-Phong shading. System info is gathered natively from /proc, /sys, and GTK
 config — no external dependencies required.
 
+Installs both the 3dfetch and fetch commands.
+
 %prep
-%autosetup -n fetch-main
+%autosetup -n 3dfetch-%{version}
 
 %build
 %make_build
@@ -33,14 +35,8 @@ config — no external dependencies required.
 %{_bindir}/3dfetch
 
 %changelog
-* Fri Aug 21 2026 Youssef Tarek <amazingritro66@gmail.com> - 2.3.0-1
-- Update to 2.3.0
+* Thu Oct 22 2026 Rutytoi220 <154633139+Rutytoi220@users.noreply.github.com> - 0.5.1-1
+- 3dfetch 0.5.1: full-width rickroll at its original speed, packaging fixes
 
-* Fri Jul 24 2026 Youssef Tarek <amazingritro66@gmail.com> - 2.2.1-1
-- Update to 2.2.1
-
-* Wed Jul 22 2026 Youssef Tarek <amazingritro66@gmail.com> - 2.2.0-1
-- Update to 2.2.0
-
-* Mon Jun 09 2026 Youssef Tarek <amazingritro66@gmail.com> - 2.1.0-1
-- Initial RPM package for Fedora
+* Thu Oct 22 2026 Rutytoi220 <154633139+Rutytoi220@users.noreply.github.com> - 0.5.0-1
+- 3dfetch 0.5.0: logo-coloured labels, unlimited --speed, --nggyu
