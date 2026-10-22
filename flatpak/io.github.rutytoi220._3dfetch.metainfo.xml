@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.rutytoi220.fetch3d</id>
+  <id>io.github.rutytoi220._3dfetch</id>
 
   <name>3dfetch</name>
   <summary>Spin your distro logo in 3D with live system info</summary>
@@ -33,7 +33,7 @@
     <p>Press any key to quit. The keypress passes through to your shell.</p>
   </description>
 
-  <launchable type="desktop-id">io.github.rutytoi220.fetch3d.desktop</launchable>
+  <launchable type="desktop-id">io.github.rutytoi220._3dfetch.desktop</launchable>
 
   <url type="homepage">https://github.com/Rutytoi220/3dfetch</url>
   <url type="bugtracker">https://github.com/Rutytoi220/3dfetch/issues</url>
@@ -42,12 +42,13 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
-    <release version="0.1.0" date="2026-10-22">
+    <release version="0.2.0" date="2026-10-22">
       <description>
         <p>First release.</p>
         <ul>
           <li>Installed as both 3dfetch and fetch</li>
           <li>The info labels take the color of the logo</li>
+          <li>Flatpak packaging</li>
         </ul>
       </description>
     </release>

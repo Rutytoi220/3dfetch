@@ -1,21 +1,15 @@
-app-id: io.github.rutytoi220.fetch3d
+app-id: io.github.rutytoi220._3dfetch
 runtime: org.freedesktop.Platform
-runtime-version: '25.08'
+runtime-version: '26.08'
 sdk: org.freedesktop.Sdk
 command: 3dfetch
 
 finish-args:
   # The tool reads the host's /etc/os-release to work out which distro logo
   # to draw, and needs the host's /proc and /sys for the system info.
-  # The runtime symlinks /etc/os-release to /usr/lib/os-release, so both are
-  # shared to get the host's file and not the runtime's.
   - --filesystem=host-os:ro
-  - --share=ipc
-  - --socket=fallback-x11
-  - --device=dri
-  # The config and the custom logo live in the user's config directory.
+  # The config and the custom logo live in ~/.config/fetch.
   - --filesystem=xdg-config/fetch:create
-  - --filesystem=xdg-cache/fetch:create
 
 cleanup:
   - /include
@@ -54,19 +48,16 @@ modules:
     build-commands:
       - make
       - make install DESTDIR=/app PREFIX=
-      - install -Dm644 io.github.rutytoi220.fetch3d.desktop
-        /app/share/applications/io.github.rutytoi220.fetch3d.desktop
-      - install -Dm644 io.github.rutytoi220.fetch3d.metainfo.xml
-        /app/share/metainfo/io.github.rutytoi220.fetch3d.metainfo.xml
-      - install -Dm644 io.github.rutytoi220.fetch3d.svg
-        /app/share/icons/hicolor/scalable/apps/io.github.rutytoi220.fetch3d.svg
+      # The desktop entry, the appstream data and the icon live in the
+      # upstream repository, so they are taken from the source rather than
+      # copied into the manifest.
+      - install -Dm644 flatpak/io.github.rutytoi220._3dfetch.desktop
+        /app/share/applications/io.github.rutytoi220._3dfetch.desktop
+      - install -Dm644 flatpak/io.github.rutytoi220._3dfetch.metainfo.xml
+        /app/share/metainfo/io.github.rutytoi220._3dfetch.metainfo.xml
+      - install -Dm644 flatpak/io.github.rutytoi220._3dfetch.svg
+        /app/share/icons/hicolor/scalable/apps/io.github.rutytoi220._3dfetch.svg
     sources:
       - type: archive
         url: https://github.com/Rutytoi220/3dfetch/archive/refs/tags/v0.1.0.tar.gz
         sha256: 071affef13506b5d62d597d09860b52d0a929e6703a42a3f1cc980fc2b0d4def
-      - type: file
-        path: io.github.rutytoi220.fetch3d.desktop
-      - type: file
-        path: io.github.rutytoi220.fetch3d.metainfo.xml
-      - type: file
-        path: io.github.rutytoi220.fetch3d.svg
