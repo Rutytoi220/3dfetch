@@ -73,7 +73,7 @@ static void test_distro_brand_colors(void) {
   // Known distros resolve to their brand color.
   const distro_brand *arch = lookup_brand("arch");
   CHECK(arch != NULL);
-  CHECK(arch && arch->r == 23 && arch->g == 147 && arch->b == 209);
+  CHECK(arch && arch->r == 0 && arch->g == 170 && arch->b == 238);
 
   const distro_brand *bazzite = lookup_brand("bazzite");
   CHECK(bazzite && bazzite->r == 138 && bazzite->g == 43 && bazzite->b == 226);
@@ -97,6 +97,51 @@ static void test_distro_brand_colors(void) {
   CHECK(lookup_brand("notadistro") == NULL);
   CHECK(lookup_brand("") == NULL);
   CHECK(lookup_brand(NULL) == NULL);
+}
+
+// The logo's main color is the one most of its cells wear, white aside.
+static void test_logo_main_color(void) {
+  logo_has_ansi = 1;
+  logo_rows = 2;
+  logo_cell_counts[0] = 4;
+  logo_cell_counts[1] = 4;
+  for (int c = 0; c < 4; c++) {
+    logo_cell_color[0][c] = 36;
+    logo_cell_color[1][c] = 37;
+  }
+  CHECK(logo_main_color() == 36);
+
+  // A logo painted mostly white still reports a real color when it has one.
+  logo_cell_color[0][0] = 32;
+  logo_cell_color[0][1] = 32;
+  CHECK(logo_main_color() == 32);
+
+  // White only: the logo is a white silhouette.
+  for (int c = 0; c < 4; c++)
+    logo_cell_color[0][c] = 37;
+  CHECK(logo_main_color() == 37);
+
+  // A logo without any colors of its own has no main color.
+  logo_has_ansi = 0;
+  CHECK(logo_main_color() == 0);
+  logo_has_ansi = 1;
+}
+
+// Repainting the logo swaps its main color for the brand one and leaves the
+// white highlights alone.
+static void test_recolor_logo(void) {
+  logo_rows = 2;
+  logo_cell_counts[0] = 4;
+  logo_cell_counts[1] = 4;
+  for (int c = 0; c < 4; c++) {
+    logo_cell_color[0][c] = 36;
+    logo_cell_color[1][c] = 37;
+  }
+  recolor_logo(36);
+  CHECK(logo_cell_color[0][0] == LOGO_COLOR_BRAND);
+  CHECK(logo_cell_color[0][3] == LOGO_COLOR_BRAND);
+  CHECK(logo_cell_color[1][0] == 37); // the white highlight survives
+  CHECK(logo_cell_color[1][3] == 37);
 }
 
 static void test_label_color(void) {
@@ -174,6 +219,8 @@ int main(void) {
   test_info_bounds();
   test_minimal_logos();
   test_distro_brand_colors();
+  test_logo_main_color();
+  test_recolor_logo();
   test_label_color();
   test_os_release_color();
   printf("Shared unit tests: %s\n", failures ? "FAILED" : "passed");

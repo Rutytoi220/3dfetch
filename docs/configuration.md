@@ -67,7 +67,7 @@ label_color=magenta
 
 Color of the labels (the "CPU:", "Memory:", etc. text). Accepts: `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, or an ANSI color number.
 
-If you leave this out, the labels use your distribution's brand color instead: light blue on Arch, purple on Bazzite, red on Red Hat, orange on Ubuntu, green on Linux Mint, and so on. Distros that aren't in that list fall back to the `ANSI_COLOR` hint in `/etc/os-release`, and then to magenta. Setting `label_color` explicitly always wins.
+If you leave this out, the labels use your distribution's brand color instead: light blue on Arch, purple on Bazzite, red on Red Hat, orange on Ubuntu, green on Linux Mint, and so on. That is the same color the logo is painted in, so the text always matches the logo. Distros that aren't in that list follow the logo's own color, and then the `ANSI_COLOR` hint in `/etc/os-release`. Setting `label_color` explicitly always wins.
 
 ```
 truecolor=1
@@ -101,7 +101,9 @@ Shading mode. `ascii` (default) uses the character ramp. `blocks` uses 2x2 quadr
 
 ## Logo colors
 
-For logos without their own ANSI colors (custom logos, some distros), you can set two-tone coloring:
+Known distributions have their logo painted in their brand color, with the
+white highlights kept as they are. For logos without colors of their own
+(custom logos, unknown distributions), you can set two-tone coloring:
 
 ```
 logo_outer=magenta

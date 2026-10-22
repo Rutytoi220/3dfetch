@@ -131,7 +131,7 @@ class FetchTests(unittest.TestCase):
         brands = {
             "ubuntu": (233, 84, 32),
             "bazzite": (138, 43, 226),
-            "arch": (23, 147, 209),
+            "arch": (0, 170, 238),
             "redhat": (238, 0, 0),
             "linuxmint": (134, 190, 67),
             "fedora": (60, 110, 180),
@@ -143,6 +143,18 @@ class FetchTests(unittest.TestCase):
                     result = self.run_fetch(["--frames", "1", "--logo", logo], home)
                     self.assertEqual(result.returncode, 0)
                     self.assertIn(f"\x1b[1;38;2;{r};{g};{b}mOS".encode(), result.stdout)
+
+    def test_logo_and_labels_share_one_color(self):
+        # The logo is repainted in the brand color and the labels use the
+        # very same one, so the two always match on screen.
+        with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
+            home = Path(directory)
+            result = self.run_fetch(["--frames", "1", "--logo", "arch"], home)
+            self.assertEqual(result.returncode, 0)
+            escape = b"\x1b[1;38;2;0;170;238m"
+            self.assertIn(escape + b"OS", result.stdout)
+            # The logo itself is painted in it too, not just the labels.
+            self.assertGreater(result.stdout.count(escape), 1)
 
     def test_label_color_config_overrides_distro(self):
         with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:

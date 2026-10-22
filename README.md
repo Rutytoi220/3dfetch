@@ -39,8 +39,9 @@ program, so you can launch it with whichever name you prefer:
 
 ## Colors
 
-The info labels (`OS`, `Host`, `Kernel`, ...) are painted in your
-distribution's own brand color, so the text matches the logo:
+The logo is painted in your distribution's brand color, and the info labels
+(`OS`, `Host`, `Kernel`, ...) take that very same color, so the text always
+matches the logo next to it:
 
 | Distro | Color | | Distro | Color |
 |---|---|---|---|---|
@@ -51,9 +52,12 @@ distribution's own brand color, so the text matches the logo:
 | openSUSE | green | | Void | green |
 | Gentoo | violet | | Alpine | blue |
 
-Anything not on the list falls back to the `ANSI_COLOR` hint in
-`/etc/os-release`, and then to magenta. Set `label_color` in your config
-to override it, or `truecolor=0` if your terminal can't do 24-bit color.
+White highlights in the logo are kept as they are. For a distribution that
+isn't on the list, the labels follow the logo's own color, and failing that
+the `ANSI_COLOR` hint in `/etc/os-release`.
+
+Set `label_color` in your config to override the label color, or
+`truecolor=0` if your terminal can't do 24-bit color.
 
 <details>
 <summary><h2>Package managers</h2></summary>
