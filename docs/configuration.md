@@ -67,6 +67,14 @@ label_color=magenta
 
 Color of the labels (the "CPU:", "Memory:", etc. text). Accepts: `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, or an ANSI color number.
 
+If you leave this out, the labels use your distribution's brand color instead: light blue on Arch, purple on Bazzite, red on Red Hat, orange on Ubuntu, green on Linux Mint, and so on. Distros that aren't in that list fall back to the `ANSI_COLOR` hint in `/etc/os-release`, and then to magenta. Setting `label_color` explicitly always wins.
+
+```
+truecolor=1
+```
+
+Force 24-bit color on (`1`) or off (`0`). By default fetch detects it from `COLORTERM`/`TERM`, which is what lets the brand colors come out exactly right. Turn it off for terminals that mangle `38;2;r;g;b` sequences; the labels then fall back to the nearest of the 16 basic colors.
+
 ```
 separator=-
 ```

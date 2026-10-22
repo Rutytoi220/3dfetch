@@ -126,6 +126,67 @@ class FetchTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 0)
                     self.assertTrue(result.stdout)
 
+    def test_distro_brand_colors(self):
+        # The info labels are painted in the distro's brand color.
+        brands = {
+            "ubuntu": (233, 84, 32),
+            "bazzite": (138, 43, 226),
+            "arch": (23, 147, 209),
+            "redhat": (238, 0, 0),
+            "linuxmint": (134, 190, 67),
+            "fedora": (60, 110, 180),
+        }
+        with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
+            home = Path(directory)
+            for logo, (r, g, b) in brands.items():
+                with self.subTest(logo=logo):
+                    result = self.run_fetch(["--frames", "1", "--logo", logo], home)
+                    self.assertEqual(result.returncode, 0)
+                    self.assertIn(f"\x1b[1;38;2;{r};{g};{b}mOS".encode(), result.stdout)
+
+    def test_label_color_config_overrides_distro(self):
+        with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
+            home = Path(directory)
+            config_dir = home / ".config" / "fetch"
+            config_dir.mkdir(parents=True)
+            (config_dir / "config").write_text("os\nhost\nlabel_color=green\n")
+            result = self.run_fetch(["--frames", "1", "--logo", "ubuntu"], home)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn(b"\x1b[1;32mOS", result.stdout)
+            self.assertNotIn(b"\x1b[1;38;2;233;84;32mOS", result.stdout)
+
+    def test_truecolor_fallback(self):
+        with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
+            home = Path(directory)
+            config_dir = home / ".config" / "fetch"
+            config_dir.mkdir(parents=True)
+            (config_dir / "config").write_text("os\nhost\ntruecolor=0\n")
+            result = self.run_fetch(["--frames", "1", "--logo", "arch"], home)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn(b"\x1b[1;36mOS", result.stdout)
+            self.assertNotIn(b"\x1b[1;38;2;", result.stdout)
+
+    def test_no_color_strips_every_color(self):
+        with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
+            home = Path(directory)
+            result = self.run_fetch(["--frames", "1", "--no-color", "--logo", "arch"], home)
+            self.assertEqual(result.returncode, 0)
+            # Only cursor control sequences may remain, no SGR colors.
+            self.assertNotIn(b"\x1b[0m", result.stdout)
+            self.assertNotIn(b"\x1b[1;", result.stdout)
+
+    def test_program_name_follows_argv(self):
+        # "make install" also installs the binary as "3dfetch"; the tool
+        # should report the name it was invoked with.
+        with tempfile.TemporaryDirectory(prefix="fetch-test-") as directory:
+            alias = Path(directory) / "3dfetch"
+            alias.symlink_to(EXECUTABLE)
+            result = subprocess.run(
+                [str(alias), "--help"], capture_output=True, timeout=10
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertIn(b"Usage: 3dfetch", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

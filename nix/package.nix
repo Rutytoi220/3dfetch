@@ -18,10 +18,12 @@ stdenv.mkDerivation (finalAttrs: {
   makeFlags = [ "PREFIX=${placeholder "out"}" ];
   nativeBuildInputs = [ makeWrapper ];
   postInstall = ''
-    wrapProgram $out/bin/fetch \
-    --prefix PATH : ${
-      lib.makeBinPath ([ fastfetch ] ++ lib.optionals stdenv.hostPlatform.isLinux [ pciutils ])
-    }
+    for prog in fetch 3dfetch; do
+      wrapProgram $out/bin/$prog \
+      --prefix PATH : ${
+        lib.makeBinPath ([ fastfetch ] ++ lib.optionals stdenv.hostPlatform.isLinux [ pciutils ])
+      }
+    done
   '';
 
   meta = {

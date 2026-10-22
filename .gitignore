@@ -1,5 +1,6 @@
 fetch
 tests/shared
+tests/os-release.tmp
 debian/files
 debian/.debhelper/
 debian/fetch/

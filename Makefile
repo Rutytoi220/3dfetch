@@ -18,6 +18,10 @@ fetch: fetch.c
 install: fetch
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -m 755 fetch $(DESTDIR)$(PREFIX)/bin/fetch
+	install -m 755 fetch $(DESTDIR)$(PREFIX)/bin/3dfetch
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/fetch $(DESTDIR)$(PREFIX)/bin/3dfetch
 
 clean:
 	rm -f fetch tests/shared
@@ -29,4 +33,4 @@ test: fetch tests/shared
 	./tests/shared
 	python3 tests/posix.py
 
-.PHONY: install clean test
+.PHONY: install uninstall clean test

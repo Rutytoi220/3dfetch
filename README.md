@@ -30,6 +30,31 @@ sudo make install
 
 `PREFIX=~/.local make install` if you don't want it system-wide.
 
+This installs two commands, `fetch` and `3dfetch`. They are the same
+program, so you can launch it with whichever name you prefer:
+
+```
+3dfetch
+```
+
+## Colors
+
+The info labels (`OS`, `Host`, `Kernel`, ...) are painted in your
+distribution's own brand color, so the text matches the logo:
+
+| Distro | Color | | Distro | Color |
+|---|---|---|---|---|
+| Arch | light blue | | Ubuntu | orange |
+| Bazzite | purple | | Linux Mint | green |
+| Red Hat / RHEL | red | | Fedora | blue |
+| Debian | red | | NixOS | blue |
+| openSUSE | green | | Void | green |
+| Gentoo | violet | | Alpine | blue |
+
+Anything not on the list falls back to the `ANSI_COLOR` hint in
+`/etc/os-release`, and then to magenta. Set `label_color` in your config
+to override it, or `truecolor=0` if your terminal can't do 24-bit color.
+
 <details>
 <summary><h2>Package managers</h2></summary>
 

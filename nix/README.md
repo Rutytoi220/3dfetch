@@ -19,7 +19,6 @@ You also need to import the nix package in your ```home.nix```.
   
   programs.fetch = {
     enable = true;
-    labelColor = "red";
     info = [
       "os"
       "kernel"
@@ -42,7 +41,6 @@ Here is a default configuration:
   
   programs.fetch = {
     enable = true;
-    labelColor = "red";
     info = [
       "os"
       "host"
@@ -96,6 +94,20 @@ Options:
     "white"
   ```
   Ex: ```labelColor = "blue";```
+
+  Leave it unset (the default) to use the distro's own brand color: light blue
+  on Arch, purple on Bazzite, red on Red Hat, orange on Ubuntu, green on
+  Linux Mint, and so on.
+
+### truecolor
+  Options:
+  ```
+    true
+    false
+  ```
+  Ex: ```truecolor = true;```
+
+  Force 24-bit color on or off. Leave it unset to let fetch detect it.
 
 ### separator
   Options:

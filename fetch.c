@@ -36,6 +36,18 @@
 static struct termios orig_termios;
 static int termios_saved = 0;
 
+// Name the binary was invoked as, so "3dfetch --help" says "3dfetch".
+static const char *prog_name = "fetch";
+
+static void set_prog_name(const char *argv0) {
+  if (!argv0 || !*argv0)
+    return;
+  const char *base = strrchr(argv0, '/');
+  prog_name = base ? base + 1 : argv0;
+  if (!*prog_name)
+    prog_name = "fetch";
+}
+
 enum v_alignment {
   V_ALIGN_TOP,
   V_ALIGN_CENTER,
@@ -103,8 +115,8 @@ static int parse_number(const char *option, const char *text, float min,
   float value = strtof(text, &end);
   if (end == text || *end || errno == ERANGE || !isfinite(value) ||
       value < min || value > max) {
-    fprintf(stderr, "fetch: %s requires a finite number from %g to %g (got '%s')\n",
-            option, min, max, text);
+    fprintf(stderr, "%s: %s requires a finite number from %g to %g (got '%s')\n",
+            prog_name, option, min, max, text);
     return 0;
   }
   *out = value;
@@ -117,8 +129,8 @@ static int parse_integer(const char *option, const char *text, int min,
   errno = 0;
   long value = strtol(text, &end, 10);
   if (end == text || *end || errno == ERANGE || value < min || value > max) {
-    fprintf(stderr, "fetch: %s requires an integer from %d to %d (got '%s')\n",
-            option, min, max, text);
+    fprintf(stderr, "%s: %s requires an integer from %d to %d (got '%s')\n",
+            prog_name, option, min, max, text);
     return 0;
   }
   *out = (int)value;
@@ -151,6 +163,22 @@ static int skip_ansi(const char *p) {
   if (p[i])
     i++; // skip the final letter
   return i;
+}
+
+// Remove ANSI escape sequences from a string, in place. --no-color uses
+// this to strip the colors that some values embed in their own text.
+static void strip_ansi(char *s) {
+  char *w = s;
+  const char *r = s;
+  while (*r) {
+    int a = skip_ansi(r);
+    if (a) {
+      r += a;
+      continue;
+    }
+    *w++ = *r++;
+  }
+  *w = '\0';
 }
 
 // Strip a trailing " (...)" documentation hint, e.g. from a config value
@@ -935,7 +963,10 @@ static char custom_label[MAX_CUSTOM][64];
 static char custom_value[MAX_CUSTOM][256];
 static int custom_count = 0;
 static int is_refresh_pass = 0;     // 1 during the animation refresh tick
-static char label_color[16] = "35"; // default magenta
+static char label_color[64] = "35"; // default magenta (SGR params, no ESC[ or m)
+static int label_color_set = 0;   // 1 = the user picked a color explicitly
+static int config_truecolor = -1; // -1 = auto-detect, 0/1 = forced by config
+static int use_color = 1;         // 0 = --no-color, strips every color
 static int config_height = 0;       // 0 = auto (match info lines)
 static float size_scale = 1.0f;
 static float config_speed = 0.0f;
@@ -1051,6 +1082,18 @@ static void load_config(void) {
         strcpy(label_color, "37");
       else
         strncpy(label_color, val, sizeof(label_color) - 1);
+      label_color[sizeof(label_color) - 1] = '\0';
+      // An explicit choice wins over the distro brand color.
+      label_color_set = 1;
+      continue;
+    }
+    if (strncmp(line, "truecolor=", 10) == 0) {
+      char *val = line + 10;
+      strip_inline_hint(val);
+      if (strcmp(val, "1") == 0 || strcasecmp(val, "true") == 0)
+        config_truecolor = 1;
+      else if (strcmp(val, "0") == 0 || strcasecmp(val, "false") == 0)
+        config_truecolor = 0;
       continue;
     }
     if (strncmp(line, "height=", 7) == 0) {
@@ -1281,8 +1324,14 @@ static void add_info(const char *label, const char *fmt, ...) {
   va_end(ap);
 
   char line[MAX_LINE_LEN];
-  snprintf(line, sizeof(line), "\033[1;%sm%s\033[0m: %s", label_color, label,
-           val);
+  if (use_color) {
+    snprintf(line, sizeof(line), "\033[1;%sm%s\033[0m: %s", label_color, label,
+             val);
+  } else {
+    // Values carry their own colors (usage levels, battery state, ...).
+    strip_ansi(val);
+    snprintf(line, sizeof(line), "%s: %s", label, val);
+  }
 
   // Refresh tick: replace the field's line in place. Initial pass: always
   // append a new line (so gathers that emit multiple rows, like multi-GPU,
@@ -1424,8 +1473,11 @@ static void gather_title(void) {
   gethostname(host, sizeof(host));
 
   char line[MAX_LINE_LEN];
-  snprintf(line, sizeof(line), "\033[1;%sm%s\033[0m@\033[1;%sm%s\033[0m",
-           label_color, user, label_color, host);
+  if (use_color)
+    snprintf(line, sizeof(line), "\033[1;%sm%s\033[0m@\033[1;%sm%s\033[0m",
+             label_color, user, label_color, host);
+  else
+    snprintf(line, sizeof(line), "%s@%s", user, host);
   add_line(line);
 
   // separator
@@ -4008,45 +4060,197 @@ static void build_points(void) {
 static const char *color_inner = "\033[1;37m";
 static const char *color_outer = "\033[1;35m";
 
+// --- Distro brand colors ---
+// The info labels are painted in the distro's own brand color so the text
+// block matches the logo. r/g/b are used when the terminal handles 24-bit
+// color; fallback is the closest 16-color SGR code for terminals that don't.
+typedef struct {
+  const char *ids; // comma-separated distro ids and aliases
+  int r, g, b;     // brand color
+  int fallback;    // 16-color SGR code (30-37)
+} distro_brand;
+
+// Order matters: the first alias that matches wins, so the specific
+// families (asahi) have to be listed before the generic ones (fedora).
+static const distro_brand distro_brands[] = {
+    // --- the classics ---
+    {"arch,archlinux,archy,arcolinux,archarm,archlabs", 23, 147, 209, 36},
+    {"ubuntu,kubuntu,ubuntulinux", 233, 84, 32, 31},
+    {"debian", 215, 10, 83, 31},
+    {"devuan", 120, 130, 140, 37},
+    {"asahi,asahi2,fedora-asahi-remix", 172, 20, 40, 31},
+    {"fedora", 60, 110, 180, 34},
+    {"gentoo", 122, 108, 179, 35},
+    {"linuxmint,mint", 134, 190, 67, 32},
+    {"manjaro", 53, 191, 92, 32},
+    {"nixos", 82, 119, 195, 34},
+    {"opensuse,opensuse-leap,opensuse-tumbleweed,suse,sles,opensuse-microos",
+     115, 186, 37, 32},
+    {"void", 71, 128, 97, 32},
+    {"alpine", 13, 89, 127, 34},
+    // --- red hat family ---
+    {"rhel,redhat,redhat-enterprise-linux", 238, 0, 0, 31},
+    {"centos,centos-stream", 238, 0, 0, 31},
+    {"rocky,rockylinux", 16, 185, 129, 32},
+    {"almalinux,alma", 44, 110, 155, 34},
+    {"ol", 238, 0, 0, 31},
+    {"oracle", 238, 0, 0, 31},
+    {"scientific", 238, 0, 0, 31},
+    // --- immutable / universal blue ---
+    {"bazzite", 138, 43, 226, 35},
+    {"bluefin", 44, 123, 229, 34},
+    {"silverblue", 44, 123, 229, 34},
+    {"aurora", 44, 123, 229, 34},
+    {"nobara", 60, 110, 180, 34},
+    // --- gaming / handheld ---
+    {"steam,steamos,steamdeck,chimeraos", 26, 159, 255, 34},
+    {"endeavouros", 123, 63, 228, 35},
+    {"cachyos,cachy", 42, 182, 182, 36},
+    {"garuda,garudalinux", 30, 144, 255, 34},
+    {"artix", 65, 176, 243, 34},
+    // --- the rest ---
+    {"pop,popos,pop!_os", 72, 185, 199, 36},
+    {"elementary,elementaryos", 100, 186, 255, 34},
+    {"zorin", 15, 148, 210, 34},
+    {"kali,kalilinux", 54, 123, 240, 34},
+    {"tails", 124, 88, 176, 35},
+    {"deepin", 44, 167, 248, 34},
+    {"solus", 82, 148, 226, 34},
+    {"mageia", 58, 78, 140, 34},
+    {"qubes,qubesos", 56, 116, 216, 34},
+    {"pureos,pure", 94, 53, 177, 35},
+    {"raspbian,raspberrypi,raspberry-pi-os", 197, 26, 74, 31},
+    {"clear,clearlinux", 85, 162, 212, 34},
+    {"mx,mxlinux", 75, 174, 79, 32},
+    {"macos,macosx,osx,darwin", 100, 100, 110, 37},
+};
+
+// Match a distro id against the table. An alias matches when it equals the
+// id or is followed by '-' or ' ' ("fedora-asahi-remix" matches "fedora").
+// Short aliases ("ol", "pop") have to match exactly, so they can't swallow
+// an unrelated distro that happens to start with the same letters.
+static const distro_brand *lookup_brand(const char *distro) {
+  if (!distro || !*distro)
+    return NULL;
+  for (size_t i = 0; i < sizeof(distro_brands) / sizeof(distro_brands[0]); i++) {
+    const distro_brand *b = &distro_brands[i];
+    const char *p = b->ids;
+    while (*p) {
+      const char *end = strchr(p, ',');
+      size_t alen = end ? (size_t)(end - p) : strlen(p);
+      if (alen > 0 && strlen(distro) >= alen &&
+          strncasecmp(distro, p, alen) == 0 &&
+          (distro[alen] == '\0' || alen <= 3 || distro[alen] == '-' ||
+           distro[alen] == ' ')) {
+        return b;
+      }
+      if (!end)
+        break;
+      p = end + 1;
+    }
+  }
+  return NULL;
+}
+
+// Does the terminal handle 24-bit color? Nearly all modern ones do; the
+// ones that don't usually say so in COLORTERM/TERM.
+static int terminal_truecolor(void) {
+  if (config_truecolor >= 0)
+    return config_truecolor;
+  const char *ct = getenv("COLORTERM");
+  if (ct && (strstr(ct, "truecolor") || strstr(ct, "24bit")))
+    return 1;
+  const char *term = getenv("TERM");
+  if (term) {
+    if (strcmp(term, "dumb") == 0)
+      return 0;
+    // The Linux console has no 24-bit support; "linux-256color" is fine.
+    if (strncmp(term, "linux", 5) == 0 && strstr(term, "256") == NULL)
+      return 0;
+    if (strstr(term, "direct"))
+      return 1;
+  }
+  return 1;
+}
+
+// Paint the labels in an RGB color, falling back to the nearest 16-color
+// code when the terminal can't do 24-bit color.
+static void set_label_rgb(int r, int g, int b, int fallback) {
+  if (label_color_set)
+    return; // the user asked for a specific color, don't override it
+  if (terminal_truecolor())
+    snprintf(label_color, sizeof(label_color), "38;2;%d;%d;%d", r, g, b);
+  else
+    snprintf(label_color, sizeof(label_color), "%d", fallback);
+}
+
+// Same, but for the logo colors, which are full escape sequences. The
+// extruded side takes the brand color, the front face stays white so the
+// relief still reads as 3D.
+static void set_logo_rgb(int r, int g, int b, int fallback) {
+  static char outer[32];
+  if (terminal_truecolor())
+    snprintf(outer, sizeof(outer), "\033[1;38;2;%d;%d;%dm", r, g, b);
+  else
+    snprintf(outer, sizeof(outer), "\033[1;%dm", fallback);
+  color_outer = outer;
+  color_inner = "\033[1;37m";
+}
+
+// Pick the label color from the ANSI_COLOR hint in an os-release file. Used
+// for distros that aren't in the brand table above.
+static void set_label_from_os_release(const char *path) {
+  if (label_color_set)
+    return;
+  FILE *fp = fopen(path, "r");
+  if (!fp)
+    return;
+  char buf[256];
+  while (fgets(buf, sizeof(buf), fp)) {
+    if (strncmp(buf, "ANSI_COLOR=", 11) != 0)
+      continue;
+    char *val = buf + 11;
+    int len = strlen(val);
+    while (len > 0 && (val[len - 1] == '\n' || val[len - 1] == '\r' ||
+                       val[len - 1] == '"' || val[len - 1] == '\'' ||
+                       val[len - 1] == ' '))
+      val[--len] = '\0';
+    if (*val == '"' || *val == '\'')
+      val++;
+    // "38;2;r;g;b" is already a truecolor triple.
+    if (strncmp(val, "38;2;", 5) == 0) {
+      int r = 0, g = 0, b = 0;
+      if (sscanf(val + 5, "%d;%d;%d", &r, &g, &b) == 3 && r >= 0 && r < 256 &&
+          g >= 0 && g < 256 && b >= 0 && b < 256) {
+        snprintf(label_color, sizeof(label_color), "38;2;%d;%d;%d", r, g, b);
+      }
+    } else {
+      // "0;135" style: the last field is the color (30-37, 90-97 or 38;5;N).
+      const char *semi = strrchr(val, ';');
+      const char *num = semi ? semi + 1 : val;
+      int code = atoi(num);
+      if (code >= 30 && code <= 37)
+        snprintf(label_color, sizeof(label_color), "%d", code);
+      else if (code >= 90 && code <= 97)
+        snprintf(label_color, sizeof(label_color), "%d", code);
+      else if (code >= 0 && code <= 255)
+        snprintf(label_color, sizeof(label_color), "38;5;%d", code);
+    }
+    break;
+  }
+  fclose(fp);
+}
+
 static void set_distro_colors(const char *distro) {
-  if (strcasecmp(distro, "gentoo") == 0) {
-    color_outer = "\033[1;35m";
-    color_inner = "\033[1;37m";
-  } else if (strcasecmp(distro, "arch") == 0) {
-    color_outer = "\033[1;36m";
-    color_inner = "\033[1;36m";
-  } else if (strcasecmp(distro, "ubuntu") == 0) {
-    color_outer = "\033[1;31m";
-    color_inner = "\033[1;37m";
-  } else if (strcasecmp(distro, "debian") == 0) {
-    color_outer = "\033[1;31m";
-    color_inner = "\033[1;37m";
-  } else if (strcasecmp(distro, "asahi") == 0 ||
-             strcasecmp(distro, "asahi2") == 0 ||
-             strcasecmp(distro, "fedora-asahi-remix") == 0) {
-    color_outer = "\033[1;31m"; // bold red
-    color_inner = "\033[1;37m"; // bold white
-  } else if (strcasecmp(distro, "fedora") == 0 ||
-             strncasecmp(distro, "fedora-", 7) == 0) {
-    color_outer = "\033[1;34m";
-    color_inner = "\033[1;37m";
-  } else if (strcasecmp(distro, "nixos") == 0) {
-    color_outer = "\033[1;34m";
-    color_inner = "\033[1;36m";
-  } else if (strcasecmp(distro, "void") == 0) {
-    color_outer = "\033[1;32m";
-    color_inner = "\033[1;32m";
-  } else if (strcasecmp(distro, "alpine") == 0) {
-    color_outer = "\033[1;34m";
-    color_inner = "\033[1;37m";
-  } else if (strcasecmp(distro, "opensuse-tumbleweed") == 0 ||
-             strcasecmp(distro, "opensuse-leap") == 0 ||
-             strcasecmp(distro, "opensuse") == 0) {
-    color_outer = "\033[1;32m";
-    color_inner = "\033[1;37m";
-  } else if (strcasecmp(distro, "macos") == 0) {
-    color_outer = "\033[1;36m";
-    color_inner = "\033[1;37m";
+  // The labels follow the distro's brand color, so the text block matches
+  // the logo instead of staying magenta on every system. The logo's own
+  // colors win when the logo carries them (fastfetch logos do).
+  const distro_brand *brand = lookup_brand(distro);
+  if (brand) {
+    set_label_rgb(brand->r, brand->g, brand->b, brand->fallback);
+    set_logo_rgb(brand->r, brand->g, brand->b, brand->fallback);
+  } else {
+    set_label_from_os_release("/etc/os-release");
   }
 }
 
@@ -4087,12 +4291,12 @@ static void get_alignment_padding(int* vertical, int* horizontal) {
 }
 
 int main(int argc, char **argv) {
+  set_prog_name(argc > 0 ? argv[0] : NULL);
   char distro[64] = "";
   const char *logo_name = NULL;
   int rotate_x = 1, rotate_y = 1;
   float speed = 1.0f;
   int show_info = 1;
-  int use_color = 1;
   int max_frames = 2000;
   const char *shading = NULL;
   const char *shading_mode = NULL;
@@ -4103,7 +4307,7 @@ int main(int argc, char **argv) {
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
       printf(
-          "Usage: fetch [options]\n\n"
+          "Usage: %s [options]\n\n"
           "Options:\n"
           "  -l, --logo <name>         Use a logo from fastfetch by name\n"
           "                            Any logo fastfetch supports works, "
@@ -4153,6 +4357,9 @@ int main(int argc, char **argv) {
           "    label_color=<color>      Label color (red, green, yellow, "
           "blue,\n"
           "                             magenta, cyan, white, or ANSI number)\n"
+          "                             Defaults to the distro's brand color.\n"
+          "    truecolor=<0/1>          Force 24-bit color off or on\n"
+          "                             (default: auto-detected)\n"
           "    separator=<char>         Title separator character\n"
           "    shading_mode=<mode>      ascii (default), blocks or sextants\n"
           "    shading=<str>            Shading ramp characters\n"
@@ -4167,15 +4374,17 @@ int main(int argc, char **argv) {
           "    box=<0/1>                Draw a border box around the info block\n\n"
           "Logo: ~/.config/fetch/logo.txt\n"
           "  Custom ASCII/Unicode logo. Add '# distro: <name>' as the\n"
-          "  first line to set the color scheme.\n");
+          "  first line to set the color scheme.\n",
+          prog_name);
       return 0;
     } else if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-V") == 0) {
-      printf("fetch %s \"%s\" (%s, %s)\n", FETCH_VERSION, FETCH_CODENAME,
+      printf("%s %s \"%s\" (%s, %s)\n", prog_name, FETCH_VERSION, FETCH_CODENAME,
              FETCH_ARCH, FETCH_OS);
       return 0;
     } else if (strcmp(argv[i], "--logo") == 0 || strcmp(argv[i], "-l") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       logo_name = argv[++i];
@@ -4189,7 +4398,8 @@ int main(int argc, char **argv) {
       rotate_y = 1;
     } else if (strcmp(argv[i], "--speed") == 0 || strcmp(argv[i], "-s") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       const char *option = argv[i];
@@ -4202,7 +4412,8 @@ int main(int argc, char **argv) {
       use_color = 0;
     } else if (strcmp(argv[i], "--frames") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       const char *option = argv[i];
@@ -4212,19 +4423,22 @@ int main(int argc, char **argv) {
       max_frames = 0;
     } else if (strcmp(argv[i], "--shading-chars") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       shading = argv[++i];
     } else if (strcmp(argv[i], "--shading-mode") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       shading_mode = argv[++i];
     } else if (strcmp(argv[i], "--height") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       const char *option = argv[i];
@@ -4233,7 +4447,8 @@ int main(int argc, char **argv) {
       height_set = 1;
     } else if (strcmp(argv[i], "--size") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       const char *option = argv[i];
@@ -4242,7 +4457,8 @@ int main(int argc, char **argv) {
       size_set = 1;
     } else if (strcmp(argv[i], "--depth") == 0) {
       if (i + 1 >= argc) {
-        fprintf(stderr, "fetch: option '%s' requires an argument\n", argv[i]);
+        fprintf(stderr, "%s: option '%s' requires an argument\n", prog_name,
+                argv[i]);
         return 1;
       }
       const char *option = argv[i];
@@ -4253,7 +4469,8 @@ int main(int argc, char **argv) {
     } else if (strcmp(argv[i], "--box") == 0) {
       box_flag = 1;
     } else {
-      fprintf(stderr, "unknown option: %s\nTry 'fetch --help'\n", argv[i]);
+      fprintf(stderr, "unknown option: %s\nTry '%s --help'\n", argv[i],
+              prog_name);
       return 1;
     }
   }
@@ -4273,8 +4490,8 @@ int main(int argc, char **argv) {
   if (!shading_mode && config_shading_mode[0])
     shading_mode = config_shading_mode;
   if (!select_shading(shading_mode, shading)) {
-    fprintf(stderr, "unknown shading mode: %s\nTry 'fetch --help'\n",
-            shading_mode);
+    fprintf(stderr, "unknown shading mode: %s\nTry '%s --help'\n",
+            shading_mode, prog_name);
     return 1;
   }
   if (!speed_set && config_speed_set)
@@ -4319,9 +4536,9 @@ int main(int argc, char **argv) {
       load_default_logo();
       if (distro[0] && strcasecmp(distro, "gentoo") != 0)
         fprintf(stderr,
-                "fetch: couldn't load %s logo (is fastfetch installed?). "
+                "%s: couldn't load %s logo (is fastfetch installed?). "
                 "using built-in gentoo logo.\n",
-                distro);
+                prog_name, distro);
     }
   }
 
@@ -4377,10 +4594,15 @@ int main(int argc, char **argv) {
         add_info(custom_label[ci], "%s", custom_value[ci]);
       } else if (id == F_COLORS) {
         add_line("");
-        add_line("\033[40m   \033[41m   \033[42m   \033[43m   "
-                 "\033[44m   \033[45m   \033[46m   \033[47m   \033[0m");
-        add_line("\033[100m   \033[101m   \033[102m   \033[103m   "
-                 "\033[104m   \033[105m   \033[106m   \033[107m   \033[0m");
+        if (use_color) {
+          add_line("\033[40m   \033[41m   \033[42m   \033[43m   "
+                   "\033[44m   \033[45m   \033[46m   \033[47m   \033[0m");
+          add_line("\033[100m   \033[101m   \033[102m   \033[103m   "
+                   "\033[104m   \033[105m   \033[106m   \033[107m   \033[0m");
+        } else {
+          add_line("                           ");
+          add_line("                           ");
+        }
       } else if (id < F_COUNT && fns[id]) {
         current_field = id;
         fns[id]();

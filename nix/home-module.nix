@@ -43,17 +43,25 @@ in
     };
 
     labelColor = lib.mkOption {
-      type = lib.types.enum [
-        "red"
-        "green"
-        "yellow"
-        "blue"
-        "magenta"
-        "cyan"
-        "white"
-      ];
-      default = "magenta";
-      description = "Color used for info labels.";
+      type = lib.types.nullOr (
+        lib.types.enum [
+          "red"
+          "green"
+          "yellow"
+          "blue"
+          "magenta"
+          "cyan"
+          "white"
+        ]
+      );
+      default = null;
+      description = "Color used for info labels. When unset, the distro's own brand color is used.";
+    };
+
+    truecolor = lib.mkOption {
+      type = lib.types.nullOr lib.types.bool;
+      default = null;
+      description = "Force 24-bit color on or off. When unset, it is auto-detected.";
     };
 
     separator = lib.mkOption {
@@ -140,6 +148,11 @@ in
             speed = if cfg.speed != null then toString cfg.speed else null;
             size = if cfg.size != null then toString cfg.size else null;
             height = if cfg.height != null then toString cfg.height else null;
+            truecolor =
+              if cfg.truecolor != null then
+                (if cfg.truecolor then "1" else "0")
+              else
+                null;
           }
         );
       in

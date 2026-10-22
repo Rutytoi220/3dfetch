@@ -69,9 +69,113 @@ static void test_minimal_logos(void) {
   }
 }
 
+static void test_distro_brand_colors(void) {
+  // Known distros resolve to their brand color.
+  const distro_brand *arch = lookup_brand("arch");
+  CHECK(arch != NULL);
+  CHECK(arch && arch->r == 23 && arch->g == 147 && arch->b == 209);
+
+  const distro_brand *bazzite = lookup_brand("bazzite");
+  CHECK(bazzite && bazzite->r == 138 && bazzite->g == 43 && bazzite->b == 226);
+
+  const distro_brand *ubuntu = lookup_brand("ubuntu");
+  CHECK(ubuntu && ubuntu->r == 233 && ubuntu->g == 84 && ubuntu->b == 32);
+
+  const distro_brand *mint = lookup_brand("linuxmint");
+  CHECK(mint && mint->r == 134 && mint->g == 190 && mint->b == 67);
+
+  const distro_brand *redhat = lookup_brand("redhat");
+  CHECK(redhat && redhat->r == 238 && redhat->g == 0 && redhat->b == 0);
+
+  // Aliases and suffixed variants resolve to the same entry.
+  CHECK(lookup_brand("mint") == mint);
+  CHECK(lookup_brand("linuxmint") == mint);
+  CHECK(lookup_brand("fedora-asahi-remix") == lookup_brand("asahi"));
+  CHECK(lookup_brand("opensuse-leap") == lookup_brand("opensuse"));
+
+  // Unknown distros match nothing.
+  CHECK(lookup_brand("notadistro") == NULL);
+  CHECK(lookup_brand("") == NULL);
+  CHECK(lookup_brand(NULL) == NULL);
+}
+
+static void test_label_color(void) {
+  // 24-bit color uses the exact brand RGB.
+  label_color_set = 0;
+  config_truecolor = 1;
+  set_label_rgb(23, 147, 209, 36);
+  CHECK(strcmp(label_color, "38;2;23;147;209") == 0);
+
+  // Without it, the nearest 16-color code is used.
+  config_truecolor = 0;
+  set_label_rgb(23, 147, 209, 36);
+  CHECK(strcmp(label_color, "36") == 0);
+
+  // An explicit choice is never overridden.
+  label_color_set = 1;
+  strcpy(label_color, "32");
+  config_truecolor = 1;
+  set_label_rgb(233, 84, 32, 31);
+  CHECK(strcmp(label_color, "32") == 0);
+
+  // The same applies to the os-release fallback.
+  strcpy(label_color, "32");
+  set_label_from_os_release("/etc/os-release");
+  CHECK(strcmp(label_color, "32") == 0);
+
+  label_color_set = 0;
+  config_truecolor = -1;
+  strcpy(label_color, "35");
+}
+
+static void test_os_release_color(void) {
+  const char *path = "tests/os-release.tmp";
+  FILE *fp = fopen(path, "w");
+  CHECK(fp != NULL);
+  if (!fp)
+    return;
+  fprintf(fp, "NAME=\"Test Linux\"\nID=testlinux\n");
+  fprintf(fp, "ANSI_COLOR=\"38;2;11;22;33\"\n");
+  fclose(fp);
+
+  label_color_set = 0;
+  strcpy(label_color, "35");
+  set_label_from_os_release(path);
+  CHECK(strcmp(label_color, "38;2;11;22;33") == 0);
+
+  // A 256-color hint is passed through as-is.
+  fp = fopen(path, "w");
+  fprintf(fp, "ANSI_COLOR=\"0;135\"\n");
+  fclose(fp);
+  strcpy(label_color, "35");
+  set_label_from_os_release(path);
+  CHECK(strcmp(label_color, "38;5;135") == 0);
+
+  // A plain 16-color hint is used directly.
+  fp = fopen(path, "w");
+  fprintf(fp, "ANSI_COLOR=\"1;34\"\n");
+  fclose(fp);
+  strcpy(label_color, "35");
+  set_label_from_os_release(path);
+  CHECK(strcmp(label_color, "34") == 0);
+
+  // No hint at all leaves the color alone.
+  fp = fopen(path, "w");
+  fprintf(fp, "ID=testlinux\n");
+  fclose(fp);
+  strcpy(label_color, "35");
+  set_label_from_os_release(path);
+  CHECK(strcmp(label_color, "35") == 0);
+
+  remove(path);
+}
+
 int main(void) {
   test_info_bounds();
   test_minimal_logos();
+  test_distro_brand_colors();
+  test_label_color();
+  test_os_release_color();
   printf("Shared unit tests: %s\n", failures ? "FAILED" : "passed");
   return failures ? 1 : 0;
 }

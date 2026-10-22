@@ -30,6 +30,7 @@ config — no external dependencies required.
 %doc README.md
 %license LICENSE
 %{_bindir}/fetch
+%{_bindir}/3dfetch
 
 %changelog
 * Fri Aug 21 2026 Youssef Tarek <amazingritro66@gmail.com> - 2.3.0-1
